@@ -97,7 +97,7 @@ class KnowledgeBase:
                                 x_sorted = x.sort_values('reason_text', key=lambda col: col.str.len(), ascending=False)
                                 return x_sorted.head(min(len(x), TARGET_PER_TYPE))
                             
-                            df = df.groupby('mbti_reference', group_keys=False).apply(sample_group).reset_index(drop=True)
+                            df = df.sort_values('reason_text', key=lambda col: col.str.len(), ascending=False).groupby('mbti_reference', group_keys=False).head(TARGET_PER_TYPE).reset_index(drop=True)
                             print(f"       ✓ Sampled to {len(df)} rows (balanced across types)")
                         
                         elif 'cognitive_function' in df.columns:
@@ -107,7 +107,7 @@ class KnowledgeBase:
                                 x_sorted = x.sort_values('reason_text', key=lambda col: col.str.len(), ascending=False)
                                 return x_sorted.head(min(len(x), TARGET_PER_FUNC))
                             
-                            df = df.groupby('cognitive_function', group_keys=False).apply(sample_group).reset_index(drop=True)
+                            df = df.sort_values('reason_text', key=lambda col: col.str.len(), ascending=False).groupby('cognitive_function', group_keys=False).head(TARGET_PER_FUNC).reset_index(drop=True)
                             print(f"       ✓ Sampled to {len(df)} rows (balanced across functions)")
 
                     dfs.append(df)
@@ -262,7 +262,7 @@ class KnowledgeBase:
         if not self.df_formal.empty and 'mbti_reference' in self.df_formal.columns:
             type_data = self.df_formal[self.df_formal['mbti_reference'] == target_type]
             if not type_data.empty:
-                sampled = type_data.sample(min(max_samples // 2, len(type_data)))
+                sampled = type_data.sample(min(max_samples // 2, len(type_data)), random_state=42)
                 
                 if 'reason_text' in sampled.columns:
                     samples.extend(sampled['reason_text'].astype(str).tolist())
@@ -299,7 +299,7 @@ class KnowledgeBase:
             if func_col and text_col:
                 func_data = self.df_slang[self.df_slang[func_col] == target_func]
                 if not func_data.empty:
-                    sampled = func_data.sample(min(max_samples // 2, len(func_data)))
+                    sampled = func_data.sample(min(max_samples // 2, len(func_data)), random_state=42)
                     samples.extend(sampled[text_col].astype(str).tolist())
         
         samples = [s for s in samples if isinstance(s, str) and len(s.strip()) > 20]

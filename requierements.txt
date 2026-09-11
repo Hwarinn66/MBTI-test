@@ -1,9 +1,2 @@
-fastapi
-uvicorn
-pydantic
-pandas
-python-dotenv
-google-genai
-scikit-learn
-deep-translator
-reportlab
+# Compatibility for older installation instructions.
+-r requirements.txt
