@@ -150,6 +150,33 @@ class AppTests(unittest.TestCase):
                 self.assertEqual(result['ai_status'], 'available' if valid else 'unavailable')
                 self.assertEqual(client.call_args.kwargs['api_key'], 'test-placeholder')
 
+    def test_gemini_503_automatically_switches_model(self):
+        from psychologist import analyze_with_ai
+
+        class BusyError(Exception):
+            code = 503
+
+        with patch.dict(os.environ, {
+            'GEMINI_API_KEY': 'test-placeholder',
+            'GEMINI_MODEL': 'busy-model',
+            'GEMINI_FALLBACK_MODELS': 'fallback-model',
+        }, clear=True), patch('dotenv.load_dotenv'), patch(
+            'psychologist._dataset_context', return_value=(None, '')
+        ), patch('psychologist.time.sleep'), patch('google.genai.Client') as client:
+            model = client.return_value.__enter__.return_value.models
+            success = type('Response', (), {
+                'text': '{"analysis_note": "Fallback berhasil menyusun ulasan refleksi yang cukup panjang untuk ditampilkan."}'
+            })()
+            model.generate_content.side_effect = [BusyError('high demand'), success]
+            result = analyze_with_ai('INTJ', [])
+
+        self.assertEqual(result['ai_status'], 'available')
+        self.assertEqual(model.generate_content.call_count, 2)
+        self.assertEqual(
+            [call.kwargs['model'] for call in model.generate_content.call_args_list],
+            ['busy-model', 'fallback-model'],
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
