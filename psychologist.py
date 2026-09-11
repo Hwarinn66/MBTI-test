@@ -18,10 +18,10 @@ def _safe_error(error, api_key):
 
 def _model_candidates():
     """Return configured model followed by stable aliases used as fallbacks."""
-    configured = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite").strip()
+    configured = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
     extras = os.getenv(
         "GEMINI_FALLBACK_MODELS",
-        "gemini-flash-lite-latest,gemini-2.5-flash-lite,gemini-flash-latest",
+        "gemini-3.5-flash-lite,gemini-3.5-flash,gemini-flash-lite-latest,gemini-flash-latest",
     )
     models = []
     for model in [configured, *extras.split(",")]:
@@ -152,10 +152,11 @@ def analyze_with_ai(math_result_type, user_answers_with_reasons, *, dimension_sc
                     last_error = error
                     code = _error_code(error)
                     has_fallback = position < len(models) - 1
-                    # Changing models helps temporary capacity and server errors.
+                    # Changing models helps retired/not-found models, temporary
+                    # capacity limits, and server errors.
                     # Authentication, billing, and invalid-request errors require
                     # user action, so do not repeat them against every model.
-                    if not has_fallback or code not in {429, 500, 502, 503, 504}:
+                    if not has_fallback or code not in {404, 429, 500, 502, 503, 504}:
                         break
                     logger.warning(
                         "Gemini model %s unavailable (%s); trying %s",

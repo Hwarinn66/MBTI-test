@@ -20,9 +20,9 @@ Buka http://localhost:8000. Halaman utama juga tersedia di `/index.html`, hasil 
 
 ## Ulasan AI opsional
 
-Tes dasar berjalan tanpa API key, tanpa memuat dataset, dan tanpa menghubungi layanan luar. Untuk mengaktifkan ulasan Gemini, salin `.env.example` menjadi `.env` dan isi `GEMINI_API_KEY` dengan key baru. `GOOGLE_API_KEY` juga didukung. `GEMINI_MODEL` dapat diubah sesuai model yang tersedia di akunmu; default mempertahankan `gemini-2.5-flash`.
+Tes dasar berjalan tanpa API key, tanpa memuat dataset, dan tanpa menghubungi layanan luar. Untuk mengaktifkan ulasan Gemini, salin `.env.example` menjadi `.env` dan isi `GEMINI_API_KEY` dengan key baru. `GOOGLE_API_KEY` juga didukung. `GEMINI_MODEL` dapat diubah sesuai model yang tersedia di akunmu; default menggunakan `gemini-3.5-flash-lite`.
 
-Pengguna memilih sendiri opsi ulasan AI sebelum mengirim. Hanya pada saat itu jawaban dan profil opsional diteruskan ke Gemini. Panggilan memiliki timeout dan tidak mencoba ulang otomatis. Jika key belum ada, respons AI tidak valid, kuota habis, atau layanan gagal, hasil dasar tetap dikembalikan dengan status yang jelas.
+Pengguna memilih sendiri opsi ulasan AI sebelum mengirim. Hanya pada saat itu jawaban dan profil opsional diteruskan ke Gemini. Panggilan memiliki timeout dan otomatis mencoba model cadangan bila model sudah dihentikan, kapasitas penuh, atau layanan mengalami gangguan sementara. Jika key belum ada, respons AI tidak valid, kuota habis, atau seluruh model gagal, hasil dasar tetap dikembalikan dengan status yang jelas.
 
 Key yang pernah terunggah ke repositori harus dicabut/diganti melalui akun penyedianya. Menghapus `.env` dan key dari kode terbaru tidak menghapusnya dari riwayat Git. Jangan commit key baru. Cache Python yang sebelumnya ikut terunggah juga dikeluarkan dari versi baru.
 
