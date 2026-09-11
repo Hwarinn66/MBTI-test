@@ -1,0 +1,399 @@
+{
+  "INTJ": [
+    {
+      "name": "Elon Musk",
+      "category": "artis",
+      "profession": "Entrepreneur",
+      "image": "famous-people/INTJ/elon-musk.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Mark Zuckerberg",
+      "category": "artis",
+      "profession": "Tech CEO",
+      "image": "famous-people/INTJ/mark-zuckerberg.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Light Yagami",
+      "category": "anime",
+      "series": "Death Note",
+      "image": "famous-people/INTJ/light-yagami.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Lelouch vi Britannia",
+      "category": "anime",
+      "series": "Code Geass",
+      "image": "famous-people/INTJ/lelouch.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Batman",
+      "category": "movies",
+      "series": "DC Universe",
+      "image": "famous-people/INTJ/batman.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Sherlock Holmes",
+      "category": "movies",
+      "series": "Sherlock",
+      "image": "famous-people/INTJ/sherlock.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Dexter",
+      "category": "kartun",
+      "series": "Dexter's Laboratory",
+      "image": "famous-people/INTJ/dexter.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Megamind",
+      "category": "kartun",
+      "series": "Megamind",
+      "image": "famous-people/INTJ/megamind.jpg",
+      "grayscale": false
+    }
+  ],
+  
+  "INTP": [
+    {
+      "name": "Albert Einstein",
+      "category": "artis",
+      "profession": "Physicist",
+      "image": "famous-people/INTP/einstein.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Bill Gates",
+      "category": "artis",
+      "profession": "Microsoft Founder",
+      "image": "famous-people/INTP/bill-gates.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "L Lawliet",
+      "category": "anime",
+      "series": "Death Note",
+      "image": "famous-people/INTP/l-lawliet.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Senku Ishigami",
+      "category": "anime",
+      "series": "Dr. Stone",
+      "image": "famous-people/INTP/senku.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Tony Stark",
+      "category": "movies",
+      "series": "Marvel",
+      "image": "famous-people/INTP/tony-stark.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Bruce Banner",
+      "category": "movies",
+      "series": "Marvel",
+      "image": "famous-people/INTP/bruce-banner.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "ENTJ": [
+    {
+      "name": "Steve Jobs",
+      "category": "artis",
+      "profession": "Apple Founder",
+      "image": "famous-people/ENTJ/steve-jobs.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Margaret Thatcher",
+      "category": "artis",
+      "profession": "UK Prime Minister",
+      "image": "famous-people/ENTJ/thatcher.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Erwin Smith",
+      "category": "anime",
+      "series": "Attack on Titan",
+      "image": "famous-people/ENTJ/erwin.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Roy Mustang",
+      "category": "anime",
+      "series": "Fullmetal Alchemist",
+      "image": "famous-people/ENTJ/roy-mustang.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Miranda Priestly",
+      "category": "movies",
+      "series": "The Devil Wears Prada",
+      "image": "famous-people/ENTJ/miranda.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "ENTP": [
+    {
+      "name": "Robert Downey Jr",
+      "category": "artis",
+      "profession": "Actor",
+      "image": "famous-people/ENTP/rdj.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Hange Zoë",
+      "category": "anime",
+      "series": "Attack on Titan",
+      "image": "famous-people/ENTP/hange.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Edward Elric",
+      "category": "anime",
+      "series": "Fullmetal Alchemist",
+      "image": "famous-people/ENTP/edward-elric.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Jack Sparrow",
+      "category": "movies",
+      "series": "Pirates of the Caribbean",
+      "image": "famous-people/ENTP/jack-sparrow.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "INFJ": [
+    {
+      "name": "Martin Luther King Jr",
+      "category": "artis",
+      "profession": "Activist",
+      "image": "famous-people/INFJ/mlk.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Nelson Mandela",
+      "category": "artis",
+      "profession": "President",
+      "image": "famous-people/INFJ/mandela.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Itachi Uchiha",
+      "category": "anime",
+      "series": "Naruto",
+      "image": "famous-people/INFJ/itachi.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Armin Arlert",
+      "category": "anime",
+      "series": "Attack on Titan",
+      "image": "famous-people/INFJ/armin.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Galadriel",
+      "category": "movies",
+      "series": "Lord of the Rings",
+      "image": "famous-people/INFJ/galadriel.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Lisa Simpson",
+      "category": "kartun",
+      "series": "The Simpsons",
+      "image": "famous-people/INFJ/lisa-simpson.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "INFP": [
+    {
+      "name": "William Shakespeare",
+      "category": "artis",
+      "profession": "Playwright",
+      "image": "famous-people/INFP/shakespeare.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Johnny Depp",
+      "category": "artis",
+      "profession": "Actor",
+      "image": "famous-people/INFP/johnny-depp.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Kaneki Ken",
+      "category": "anime",
+      "series": "Tokyo Ghoul",
+      "image": "famous-people/INFP/kaneki.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Violet Evergarden",
+      "category": "anime",
+      "series": "Violet Evergarden",
+      "image": "famous-people/INFP/violet.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "ENFJ": [
+    {
+      "name": "Barack Obama",
+      "category": "artis",
+      "profession": "US President",
+      "image": "famous-people/ENFJ/obama.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Oprah Winfrey",
+      "category": "artis",
+      "profession": "TV Host",
+      "image": "famous-people/ENFJ/oprah.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "All Might",
+      "category": "anime",
+      "series": "My Hero Academia",
+      "image": "famous-people/ENFJ/all-might.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "ENFP": [
+    {
+      "name": "Robin Williams",
+      "category": "artis",
+      "profession": "Actor/Comedian",
+      "image": "famous-people/ENFP/robin-williams.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Naruto Uzumaki",
+      "category": "anime",
+      "series": "Naruto",
+      "image": "famous-people/ENFP/naruto.jpg",
+      "grayscale": false
+    },
+    {
+      "name": "Spider-Man",
+      "category": "movies",
+      "series": "Marvel",
+      "image": "famous-people/ENFP/spiderman.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "ISTJ": [
+    {
+      "name": "George Washington",
+      "category": "artis",
+      "profession": "US President",
+      "image": "famous-people/ISTJ/washington.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Levi Ackerman",
+      "category": "anime",
+      "series": "Attack on Titan",
+      "image": "famous-people/ISTJ/levi.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "ISFJ": [
+    {
+      "name": "Mother Teresa",
+      "category": "artis",
+      "profession": "Humanitarian",
+      "image": "famous-people/ISFJ/mother-teresa.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Captain America",
+      "category": "movies",
+      "series": "Marvel",
+      "image": "famous-people/ISFJ/captain-america.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "ESTJ": [
+    {
+      "name": "Judge Judy",
+      "category": "artis",
+      "profession": "TV Judge",
+      "image": "famous-people/ESTJ/judge-judy.jpg",
+      "grayscale": true
+    }
+  ],
+
+  "ESFJ": [
+    {
+      "name": "Taylor Swift",
+      "category": "artis",
+      "profession": "Singer",
+      "image": "famous-people/ESFJ/taylor-swift.jpg",
+      "grayscale": true
+    }
+  ],
+
+  "ISTP": [
+    {
+      "name": "Clint Eastwood",
+      "category": "artis",
+      "profession": "Actor/Director",
+      "image": "famous-people/ISTP/clint-eastwood.jpg",
+      "grayscale": true
+    },
+    {
+      "name": "Spike Spiegel",
+      "category": "anime",
+      "series": "Cowboy Bebop",
+      "image": "famous-people/ISTP/spike.jpg",
+      "grayscale": false
+    }
+  ],
+
+  "ISFP": [
+    {
+      "name": "Michael Jackson",
+      "category": "artis",
+      "profession": "Singer",
+      "image": "famous-people/ISFP/mj.jpg",
+      "grayscale": true
+    }
+  ],
+
+  "ESTP": [
+    {
+      "name": "Ernest Hemingway",
+      "category": "artis",
+      "profession": "Writer",
+      "image": "famous-people/ESTP/hemingway.jpg",
+      "grayscale": true
+    }
+  ],
+
+  "ESFP": [
+    {
+      "name": "Marilyn Monroe",
+      "category": "artis",
+      "profession": "Actress",
+      "image": "famous-people/ESFP/marilyn.jpg",
+      "grayscale": true
+    }
+  ]
+}

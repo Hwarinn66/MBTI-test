@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your MBTI Results - InnerSelf Discovery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #e0e7ff 0%, #eef2ff 50%, #f0f9ff 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        
+        .famous-card {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .famous-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px -5px rgba(99, 102, 241, 0.3);
+        }
+        
+        .famous-card img {
+            transition: transform 0.7s ease;
+        }
+        
+        .famous-card:hover img {
+            transform: scale(1.1);
+        }
+        
+        .grayscale-img {
+            filter: grayscale(100%);
+        }
+        
+        .famous-card:hover .grayscale-img {
+            filter: grayscale(0%);
+        }
+        
+        .category-badge {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .famous-card:hover .category-badge {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 1.5rem;
+        }
+        
+        @media (min-width: 640px) {
+            .masonry-grid {
+                column-count: 2;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .masonry-grid {
+                column-count: 3;
+            }
+        }
+        
+        @media (min-width: 1280px) {
+            .masonry-grid {
+                column-count: 4;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-900">
+    
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-white/50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 text-white flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-200">
+                        <span class="text-2xl">🧠</span>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">InnerSelf</span>
+                        <span class="block text-xs uppercase tracking-widest text-slate-500 font-bold">Discovery</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <button onclick="window.location.href='index.html'" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">
+                        🔄 Retake Test
+                    </button>
+                    <button onclick="shareResults()" class="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-lg hover:shadow-lg transition-all">
+                        📤 Share
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
+        
+        <!-- Hero Card - MBTI Type Display -->
+        <div class="glass-panel rounded-3xl p-8 lg:p-10 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-indigo-500/10 via-purple-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+            
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-8">
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full shadow-lg">Your Type</span>
+                        <span id="population-badge" class="px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-600 bg-slate-200/50 rounded-full backdrop-blur-sm border border-white/20">Loading...</span>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col md:flex-row gap-8 items-start md:items-center mb-10">
+                    <div>
+                        <h1 id="mbti-type" class="text-7xl lg:text-8xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-slate-900 via-slate-700 to-slate-900 drop-shadow-sm">XXXX</h1>
+                        <h2 id="mbti-nickname" class="text-2xl font-bold text-indigo-600 tracking-wide">The Analyst</h2>
+                    </div>
+                    <div class="hidden md:block h-20 w-px bg-gradient-to-b from-transparent via-slate-300 to-transparent"></div>
+                    <p id="mbti-quote" class="text-lg text-slate-600 font-medium italic max-w-md">
+                        Loading your personality insights...
+                    </p>
+                </div>
+                
+                <div id="trait-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <!-- Trait cards will be inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Cognitive Functions -->
+        <div class="glass-panel rounded-3xl p-8 lg:p-12">
+            <h2 class="text-3xl font-bold text-slate-900 mb-2 flex items-center gap-3">
+                <span class="text-4xl">🧩</span>
+                Cognitive Functions Profile
+            </h2>
+            <p class="text-slate-500 mb-8">Distribusi 8 fungsi kognitif dalam kepribadian Anda</p>
+            
+            <div id="cognitive-chart" class="space-y-4">
+                <!-- Cognitive functions will be inserted here -->
+            </div>
+        </div>
+
+        <!-- AI Analysis Report -->
+        <div class="glass-panel rounded-3xl p-8 lg:p-12">
+            <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-3 text-2xl">
+                <span class="text-3xl">📝</span>
+                Laporan Psikologis AI
+            </h3>
+            <div id="ai-note" class="text-slate-800 leading-relaxed space-y-4 prose prose-sm max-w-none">
+                <p class="italic text-slate-500">Memuat analisis...</p>
+            </div>
+            
+            <div class="mt-6 pt-6 border-t-2 border-slate-200 grid md:grid-cols-2 gap-4">
+                <div class="bg-white/50 rounded-xl p-4">
+                    <p class="text-xs text-slate-600 mb-1 font-semibold uppercase">AI Confidence</p>
+                    <p id="confidence-level" class="text-2xl font-bold text-purple-700">-</p>
+                </div>
+                <div class="bg-white/50 rounded-xl p-4">
+                    <p class="text-xs text-slate-600 mb-1 font-semibold uppercase">Dataset Match</p>
+                    <p id="dataset-similarity" class="text-2xl font-bold text-indigo-700">-</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Famous People Matching -->
+        <div class="space-y-6">
+            <div class="flex items-center justify-between px-2">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900">Tokoh Serupa</h2>
+                    <p class="text-slate-500 mt-1">Kindred spirits who share your personality type</p>
+                </div>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div class="flex flex-wrap gap-3 px-2">
+                <button onclick="filterCategory('all')" class="filter-btn active px-4 py-2 text-sm font-bold rounded-lg transition-all bg-indigo-600 text-white">
+                    All
+                </button>
+                <button onclick="filterCategory('anime')" class="filter-btn px-4 py-2 text-sm font-bold rounded-lg transition-all bg-slate-200 text-slate-700 hover:bg-slate-300">
+                    Anime
+                </button>
+                <button onclick="filterCategory('artis')" class="filter-btn px-4 py-2 text-sm font-bold rounded-lg transition-all bg-slate-200 text-slate-700 hover:bg-slate-300">
+                    Artis
+                </button>
+                <button onclick="filterCategory('movies')" class="filter-btn px-4 py-2 text-sm font-bold rounded-lg transition-all bg-slate-200 text-slate-700 hover:bg-slate-300">
+                    Movies/TV
+                </button>
+                <button onclick="filterCategory('kartun')" class="filter-btn px-4 py-2 text-sm font-bold rounded-lg transition-all bg-slate-200 text-slate-700 hover:bg-slate-300">
+                    Kartun
+                </button>
+            </div>
+
+            <!-- Masonry Grid -->
+            <div id="famous-people-grid" class="masonry-grid">
+                <!-- Famous people cards will be inserted here -->
+            </div>
+
+            <!-- Load More Button -->
+            <div class="text-center pt-6">
+                <button id="load-more-btn" onclick="loadMorePeople()" class="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                    Load More
+                    <span class="ml-2">↓</span>
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto border-t border-white/20 bg-white/70 backdrop-blur-md py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 text-white flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
+                    <span class="text-xl">🧠</span>
+                </div>
+                <span class="text-lg font-bold text-slate-900">InnerSelf Discovery</span>
+            </div>
+            <p class="text-slate-400 text-xs">© 2024 InnerSelf. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Global variables
+        let currentType = 'INTJ';
+        let allPeople = [];
+        let filteredPeople = [];
+        let displayedCount = 0;
+        const LOAD_INCREMENT = 6;
+        let currentFilter = 'all';
+
+        // MBTI Data
+        const mbtiData = {
+            'INTJ': { nickname: 'The Architect', population: '2.1%', quote: 'Imagination is more important than knowledge.' },
+            'INTP': { nickname: 'The Logician', population: '3.3%', quote: 'The important thing is to not stop questioning.' },
+            'ENTJ': { nickname: 'The Commander', population: '1.8%', quote: 'The best way to predict the future is to create it.' },
+            'ENTP': { nickname: 'The Debater', population: '3.2%', quote: 'Innovation distinguishes between a leader and a follower.' },
+            'INFJ': { nickname: 'The Advocate', population: '1.5%', quote: 'Be the change you wish to see in the world.' },
+            'INFP': { nickname: 'The Mediator', population: '4.4%', quote: 'To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.' },
+            'ENFJ': { nickname: 'The Protagonist', population: '2.5%', quote: 'The greatest glory in living lies not in never falling, but in rising every time we fall.' },
+            'ENFP': { nickname: 'The Campaigner', population: '8.1%', quote: 'Life is either a daring adventure or nothing at all.' },
+            'ISTJ': { nickname: 'The Logistician', population: '11.6%', quote: 'Do your duty and a little more and the future will take care of itself.' },
+            'ISFJ': { nickname: 'The Defender', population: '13.8%', quote: 'The best way to find yourself is to lose yourself in the service of others.' },
+            'ESTJ': { nickname: 'The Executive', population: '8.7%', quote: 'Good order is the foundation of all things.' },
+            'ESFJ': { nickname: 'The Consul', population: '12.3%', quote: 'Kindness is the language which the deaf can hear and the blind can see.' },
+            'ISTP': { nickname: 'The Virtuoso', population: '5.4%', quote: 'I never think of the future - it comes soon enough.' },
+            'ISFP': { nickname: 'The Adventurer', population: '8.8%', quote: 'The purpose of art is washing the dust of daily life off our souls.' },
+            'ESTP': { nickname: 'The Entrepreneur', population: '4.3%', quote: 'Life is either a daring adventure or nothing.' },
+            'ESFP': { nickname: 'The Entertainer', population: '8.5%', quote: 'We are all here on earth to help others; what on earth the others are here for I don\'t know.' }
+        };
+
+        // Load result from localStorage or URL params
+        function loadResult() {
+            // Try localStorage first
+            const storedResult = localStorage.getItem('mbti_result');
+            if (storedResult) {
+                const result = JSON.parse(storedResult);
+                displayResult(result);
+                return;
+            }
+
+            // Try URL params
+            const urlParams = new URLSearchParams(window.location.search);
+            const type = urlParams.get('type');
+            if (type) {
+                // Fetch from backend if needed
+                fetchResultFromBackend(type);
+            } else {
+                // No data found
+                alert('No test result found. Please take the test first.');
+                window.location.href = 'index.html';
+            }
+        }
+
+        function displayResult(result) {
+            currentType = result.final_result || 'INTJ';
+            const data = mbtiData[currentType];
+
+            // Update hero section
+            document.getElementById('mbti-type').textContent = currentType;
+            document.getElementById('mbti-nickname').textContent = data.nickname;
+            document.getElementById('mbti-quote').textContent = data.quote;
+            document.getElementById('population-badge').textContent = data.population + ' Population';
+
+            // Display trait cards (example - customize based on your needs)
+            const traitCardsHTML = `
+                <div class="bg-white/40 p-5 rounded-2xl border border-white/40 backdrop-blur-sm hover:bg-white/60 transition-colors">
+                    <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mb-3">
+                        <span class="text-2xl">👁️</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 mb-1">Visionary</h3>
+                    <p class="text-sm text-slate-600 leading-snug">Deep insights and future-focused thinking</p>
+                </div>
+                <div class="bg-white/40 p-5 rounded-2xl border border-white/40 backdrop-blur-sm hover:bg-white/60 transition-colors">
+                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+                        <span class="text-2xl">🎯</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 mb-1">Strategic</h3>
+                    <p class="text-sm text-slate-600 leading-snug">Plans ahead with precision and purpose</p>
+                </div>
+                <div class="bg-white/40 p-5 rounded-2xl border border-white/40 backdrop-blur-sm hover:bg-white/60 transition-colors">
+                    <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-600 flex items-center justify-center mb-3">
+                        <span class="text-2xl">💡</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 mb-1">Independent</h3>
+                    <p class="text-sm text-slate-600 leading-snug">Self-reliant and confident in abilities</p>
+                </div>
+            `;
+            document.getElementById('trait-cards').innerHTML = traitCardsHTML;
+
+            // Display cognitive functions
+            displayCognitiveFunctions(result.cognitive_scores || {}, result.function_stack || []);
+
+            // Display AI analysis
+            displayAIAnalysis(result);
+
+            // Load famous people
+            loadFamousPeople(currentType);
+        }
+
+        function displayCognitiveFunctions(scores, stack) {
+            const funcNames = {
+                'Ni': 'Introverted Intuition',
+                'Ne': 'Extraverted Intuition',
+                'Si': 'Introverted Sensing',
+                'Se': 'Extraverted Sensing',
+                'Ti': 'Introverted Thinking',
+                'Te': 'Extraverted Thinking',
+                'Fi': 'Introverted Feeling',
+                'Fe': 'Extraverted Feeling'
+            };
+
+            const sortedFuncs = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+            
+            let html = '';
+            sortedFuncs.forEach(([func, score]) => {
+                const percentage = (score / 50) * 100;
+                const stackPos = stack.indexOf(func) + 1;
+                const isInStack = stackPos > 0;
+
+                html += `
+                    <div class="flex items-center gap-3">
+                        <div class="w-16 text-sm font-bold ${isInStack ? 'text-purple-700' : 'text-slate-600'}">
+                            ${func}${isInStack ? ` (#${stackPos})` : ''}
+                        </div>
+                        <div class="flex-1">
+                            <div class="bg-slate-200 rounded-full h-8 overflow-hidden">
+                                <div class="h-full flex items-center justify-end px-3 text-white text-xs font-bold transition-all duration-1000 ${isInStack ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-gradient-to-r from-slate-400 to-slate-500'}" 
+                                     style="width: ${percentage}%">
+                                    ${score.toFixed(1)}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-32 text-xs text-slate-600">${funcNames[func]}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('cognitive-chart').innerHTML = html;
+        }
+
+        function displayAIAnalysis(result) {
+            const aiNote = result.ai_note || 'Analisis tidak tersedia.';
+            const paragraphs = aiNote.split('\n\n').filter(p => p.trim());
+            const formattedNote = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+            
+            document.getElementById('ai-note').innerHTML = formattedNote;
+            document.getElementById('confidence-level').textContent = `${(result.confidence * 100).toFixed(0)}%`;
+            
+            const datasetPct = result.dataset_similarity * 100;
+            const datasetText = datasetPct < 1 && datasetPct > 0 
+                ? datasetPct.toFixed(1) + '%'
+                : datasetPct.toFixed(0) + '%';
+            document.getElementById('dataset-similarity').textContent = datasetText;
+        }
+
+        async function loadFamousPeople(type) {
+            try {
+                const response = await fetch('famous_people.json');
+                const data = await response.json();
+                
+                allPeople = data[type] || [];
+                filteredPeople = allPeople;
+                displayedCount = 0;
+                
+                document.getElementById('famous-people-grid').innerHTML = '';
+                loadMorePeople();
+            } catch (error) {
+                console.error('Error loading famous people:', error);
+                document.getElementById('famous-people-grid').innerHTML = '<p class="text-slate-500 text-center col-span-full">Failed to load famous people data.</p>';
+            }
+        }
+
+        function filterCategory(category) {
+            currentFilter = category;
+            
+            // Update button styles
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-indigo-600', 'text-white');
+                btn.classList.add('bg-slate-200', 'text-slate-700');
+            });
+            event.target.classList.add('active', 'bg-indigo-600', 'text-white');
+            event.target.classList.remove('bg-slate-200', 'text-slate-700');
+
+            // Filter people
+            if (category === 'all') {
+                filteredPeople = allPeople;
+            } else {
+                filteredPeople = allPeople.filter(person => person.category.toLowerCase() === category);
+            }
+
+            // Reset display
+            displayedCount = 0;
+            document.getElementById('famous-people-grid').innerHTML = '';
+            loadMorePeople();
+        }
+
+        function loadMorePeople() {
+            const grid = document.getElementById('famous-people-grid');
+            const endIndex = Math.min(displayedCount + LOAD_INCREMENT, filteredPeople.length);
+            
+            for (let i = displayedCount; i < endIndex; i++) {
+                const person = filteredPeople[i];
+                const card = createPersonCard(person);
+                grid.innerHTML += card;
+            }
+
+            displayedCount = endIndex;
+
+            // Hide load more button if all loaded
+            const loadMoreBtn = document.getElementById('load-more-btn');
+            if (displayedCount >= filteredPeople.length) {
+                loadMoreBtn.style.display = 'none';
+            } else {
+                loadMoreBtn.style.display = 'inline-block';
+            }
+        }
+
+        function createPersonCard(person) {
+            const grayscaleClass = person.grayscale ? 'grayscale-img' : '';
+            const categoryColors = {
+                'anime': 'bg-pink-500',
+                'artis': 'bg-blue-500',
+                'movies': 'bg-purple-500',
+                'kartun': 'bg-green-500'
+            };
+            const bgColor = categoryColors[person.category.toLowerCase()] || 'bg-indigo-500';
+
+            return `
+                <div class="famous-card relative rounded-2xl overflow-hidden shadow-lg cursor-pointer group">
+                    <img src="${person.image}" alt="${person.name}" class="${grayscaleClass} w-full object-cover" onerror="this.src='https://via.placeholder.com/400x500?text=${person.name}'">
+                    
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity"></div>
+                    
+                    <div class="absolute bottom-0 left-0 w-full p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                        <div class="w-8 h-0.5 bg-indigo-500 mb-3 transition-all group-hover:w-16"></div>
+                        <h3 class="text-white font-bold text-xl leading-none mb-1">${person.name}</h3>
+                        <p class="text-slate-300 text-xs font-medium uppercase tracking-wider">${person.series || person.profession || ''}</p>
+                    </div>
+                    
+                    <div class="category-badge absolute top-4 right-4 ${bgColor} backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-wider">
+                        ${person.category}
+                    </div>
+                </div>
+            `;
+        }
+
+        function shareResults() {
+            const text = `Saya baru saja menyelesaikan tes MBTI! Tipe kepribadian saya adalah ${currentType}. Coba juga di InnerSelf Discovery!`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Hasil Tes MBTI Saya',
+                    text: text
+                });
+            } else {
+                navigator.clipboard.writeText(text);
+                alert('Hasil disalin ke clipboard!');
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadResult();
+        });
+
+        // Mock function to fetch from backend (if needed)
+        async function fetchResultFromBackend(sessionId) {
+            // Implement if using Option B (saved sessions)
+            alert('Session-based results not implemented yet. Using demo data.');
+            displayResult({
+                final_result: 'INTJ',
+                cognitive_scores: {
+                    'Ni': 45, 'Te': 38, 'Fi': 22, 'Se': 12,
+                    'Ne': 15, 'Ti': 20, 'Fe': 10, 'Si': 8
+                },
+                function_stack: ['Ni', 'Te', 'Fi', 'Se'],
+                confidence: 0.87,
+                dataset_similarity: 0.75,
+                ai_note: 'This is a demo analysis. Connect to your backend for real results.'
+            });
+        }
+    </script>
+</body>
+</html>
