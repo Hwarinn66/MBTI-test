@@ -8,6 +8,13 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+def _safe_error(error, api_key):
+    """Return a short diagnostic without leaking the key or submitted answers."""
+    message = str(error).replace(api_key, "[API_KEY]") if api_key else str(error)
+    message = " ".join(message.split())
+    return f"{type(error).__name__}: {message[:350]}"
+
+
 @lru_cache(maxsize=1)
 def _reference_index():
     from dataset_loader import kb
@@ -66,11 +73,6 @@ def analyze_with_ai(math_result_type, user_answers_with_reasons, *, dimension_sc
     try:
         from google import genai
         from google.genai import types
-        from pydantic import BaseModel, Field
-
-        class Analysis(BaseModel):
-            analysis_note: str = Field(min_length=40, max_length=12000)
-
         instruction = (
             "Kamu membantu pengguna merefleksikan jawaban tes kepribadian. "
             "Tulis 4-6 paragraf singkat dalam bahasa Indonesia dengan aku/kamu. "
@@ -90,12 +92,21 @@ def analyze_with_ai(math_result_type, user_answers_with_reasons, *, dimension_sc
                 contents=json.dumps(payload, ensure_ascii=False),
                 config=types.GenerateContentConfig(
                     system_instruction=instruction, temperature=0.2, max_output_tokens=2200,
-                    response_mime_type="application/json", response_schema=Analysis,
+                    response_mime_type="application/json",
+                    response_json_schema={
+                        "type": "object",
+                        "properties": {"analysis_note": {"type": "string"}},
+                        "required": ["analysis_note"],
+                        "additionalProperties": False,
+                    },
                 ),
             )
-        parsed = Analysis.model_validate_json(response.text or "")
-        return {"analysis_note": parsed.analysis_note, "ai_status": "available", "dataset_similarity": similarity}
-    except Exception:
+        parsed = json.loads(response.text or "")
+        note = parsed.get("analysis_note") if isinstance(parsed, dict) else None
+        if not isinstance(note, str) or len(note.strip()) < 40:
+            raise ValueError("Gemini returned an empty or incomplete analysis_note")
+        return {"analysis_note": note.strip()[:12000], "ai_status": "available", "dataset_similarity": similarity}
+    except Exception as error:
         # Do not expose API responses, credentials, or personal answers in logs.
-        logger.warning("Gemini unavailable; returning basic interpretation")
+        logger.warning("Gemini unavailable (%s); returning basic interpretation", _safe_error(error, api_key))
         return {"ai_status": "unavailable", "dataset_similarity": similarity}
