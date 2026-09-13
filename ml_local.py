@@ -1,7 +1,9 @@
 """Portable TF-IDF + logistic model inference, using only the Python stdlib.
 
 JSON coefficients are data, not executable pickle. No networking or downloads.
-Scores describe synthetic class recognition; not real-person confidence.
+For every non-empty written reason, runtime returns the closest supported
+cognitive-function class. Scores are retained for debugging/weighting only;
+they no longer act as an abstention threshold.
 """
 import gzip
 import json
@@ -13,6 +15,8 @@ from pathlib import Path
 
 MODEL_PATH = Path(__file__).resolve().parent / "models" / "cognitive_text.json.gz"
 TOKEN_RE = re.compile(r"(?u)\b\w\w+\b")
+VALID_FUNCTIONS = {"Te", "Ti", "Fe", "Fi", "Ne", "Ni", "Se", "Si"}
+VALID_STANCES = {"support", "oppose", "mixed"}
 
 
 def normalize(text):
@@ -52,39 +56,30 @@ class LocalClassifier:
         denom = sum(exp)
         return dict(zip(self.model["classes"], [x/denom for x in exp]))
 
+    @staticmethod
+    def _valid_label(label):
+        parts = label.split(":", 1)
+        return len(parts) == 2 and parts[0] in VALID_FUNCTIONS and parts[1] in VALID_STANCES
+
     def predict(self, reason):
         reason = reason.strip()
         empty = {"accepted": False, "function": None, "stance": "unknown", "model_score": 0.0,
-                 "evidence": reason, "status": "empty" if not reason else "unclear"}
-        if len(TOKEN_RE.findall(reason)) < 4:
+                 "evidence": reason, "status": "empty" if not reason else "invalid_label"}
+        if not reason:
             return empty
-        # Typing assertions / prompt commands are not behavioral evidence.
-        if re.search(r"\b(?:INTJ|INTP|ENTJ|ENTP|INFJ|INFP|ENFJ|ENFP|ISTJ|ISFJ|ESTJ|ESFJ|ISTP|ISFP|ESTP|ESFP)\b|abaikan (?:instruksi|aturan)|system prompt", reason, re.I):
-            return {**empty, "status": "unsupported"}
+
         probs = self.probabilities(reason)
-        label, score = max(probs.items(), key=lambda p: p[1])
+        # Unknown remains useful during training/evaluation, but the product
+        # behaviour requested here is best-match classification: every written
+        # reason receives the closest one of the eight cognitive functions.
+        candidates = [(label, score) for label, score in probs.items() if self._valid_label(label)]
+        if not candidates:
+            return empty
+        label, score = max(candidates, key=lambda p: p[1])
+        f, stance = label.split(":", 1)
 
-        # Be defensive with older/newer datasets that may encode unknown either
-        # as "unknown" or "unknown:unknown". Unknown is always an abstention,
-        # never a cognitive function to feed into scoring.
-        if label == "unknown" or label.startswith("unknown:") or score < self.model["threshold"]:
-            return {**empty, "model_score": round(score, 4)}
-
-        parts = label.split(":", 1)
-        if len(parts) != 2:
-            return {**empty, "status": "invalid_label", "model_score": round(score, 4)}
-        f, stance = parts
-        if f not in {"Te", "Ti", "Fe", "Fi", "Ne", "Ni", "Se", "Si"} or stance not in {"support", "oppose", "mixed"}:
-            return {**empty, "status": "invalid_label", "model_score": round(score, 4)}
-
-        negative = bool(re.search(r"\b(tidak|tak|bukan|jarang|enggan|belum|kurang)\b", normalize(reason)))
-        situational = bool(re.search(r"\b(kadang|tergantung|bergantung|kalau|kecuali|sesekali|tapi|tetapi)\b", normalize(reason)))
-        # Conservative guards: a bag-of-ngrams model cannot reliably resolve
-        # the scope of negation. Abstain instead of reversing the user's words.
-        if (stance == "support" and negative) or (stance == "oppose" and not negative) or (stance == "mixed" and not situational):
-            return {**empty, "status": "ambiguous_language", "model_score": round(score, 4)}
         return {**empty, "accepted": True, "function": f, "stance": stance,
-                "model_score": round(score, 4), "status": "recognized"}
+                "model_score": round(score, 4), "status": "best_match"}
 
 
 @lru_cache(maxsize=1)
