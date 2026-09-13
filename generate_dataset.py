@@ -8,8 +8,9 @@ import csv
 import hashlib
 import json
 import random
-from collections import Counter
 from pathlib import Path
+
+from dataset_utils import validate_rows
 
 BASE = Path(__file__).resolve().parent
 SEED = 20260912
@@ -181,20 +182,10 @@ def build_rows(seed=SEED):
     return rows
 
 
-def validate_rows(rows):
-    if len({r["text"].casefold() for r in rows}) != len(rows):
-        raise ValueError("Duplicate text found")
-    groups = {s: {r["family_id"] for r in rows if r["split"] == s} for s in ("train", "validation", "test")}
-    if any(groups[a] & groups[b] for a, b in (("train", "validation"), ("train", "test"), ("validation", "test"))):
-        raise ValueError("Semantic-family leakage")
-    return {"rows": len(rows), "unique_texts": len(rows), "split_counts": dict(Counter(r["split"] for r in rows)),
-            "label_counts": dict(sorted(Counter(r["label"] for r in rows).items())),
-            "semantic_family_overlap": 0, "real_respondents": 0}
-
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path, default=BASE / "data" / "cognitive_reasons.csv")
+    # The default must not replace the active v1+v2 merged corpus with only v1.
+    parser.add_argument("--output", type=Path, default=BASE / "data" / "cognitive_reasons_v1.csv")
     parser.add_argument("--seed", type=int, default=SEED)
     args = parser.parse_args()
     rows = build_rows(args.seed)
