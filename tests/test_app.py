@@ -104,6 +104,9 @@ class AppTests(unittest.TestCase):
         for path in ("/", "/index.html", "/result.html", "/questions", "/health", "/static/styles.css", "/static/test.js", "/static/result.js", "/static/icons.svg"):
             self.assertEqual(self.client.get(path).status_code, 200, path)
         self.assertFalse(self.client.get("/health").json()["external_ai"])
+        people = self.client.get("/famous_people.json").json()
+        self.assertTrue(people["INTP"][0]["image"].startswith("https://commons.wikimedia.org/"))
+        self.assertIn("image_credit", people["INTP"][0])
         q = self.client.get("/questions").json()
         self.assertEqual(q["choices"][3]["contributions"], [-1, 1])
         self.assertNotIn("function", q["questions"][0])
@@ -222,7 +225,9 @@ class AppTests(unittest.TestCase):
         r = self.client.post("/submit", content=b"x"*65537, headers={"Content-Type": "application/json"})
         self.assertEqual(r.status_code, 413)
         self.assertEqual(self.client.get("/health").headers["cache-control"], "no-store")
-        self.assertIn("script-src 'self'", self.client.get("/").headers["content-security-policy"])
+        csp = self.client.get("/").headers["content-security-policy"]
+        self.assertIn("script-src 'self'", csp)
+        self.assertIn("https://commons.wikimedia.org", csp)
 
 
 class ModelTests(unittest.TestCase):

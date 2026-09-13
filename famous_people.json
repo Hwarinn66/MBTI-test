@@ -5,6 +5,10 @@
       "category": "artis",
       "profession": "Entrepreneur",
       "image": "famous-people/INTJ/elon-musk.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Elon%20Musk%20Royal%20Society%20%28crop2%29.jpg?width=480",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Elon_Musk_Royal_Society_(crop2).jpg",
+      "image_credit": "Debbie Rowe · Wikimedia Commons",
+      "image_license": "Creative Commons; lihat halaman sumber",
       "grayscale": true
     },
     {
@@ -12,6 +16,10 @@
       "category": "artis",
       "profession": "Tech CEO",
       "image": "famous-people/INTJ/mark-zuckerberg.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Mark%20Zuckerberg%20F8%202018%20Keynote.jpg?width=480",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Mark_Zuckerberg_F8_2018_Keynote.jpg",
+      "image_credit": "Anthony Quintano · CC BY 2.0",
+      "image_license": "CC BY 2.0",
       "grayscale": true
     },
     {
@@ -64,6 +72,10 @@
       "category": "artis",
       "profession": "Physicist",
       "image": "famous-people/INTP/einstein.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Albert%20Einstein%20Head%20cleaned.jpg?width=480",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Albert_Einstein_Head_cleaned.jpg",
+      "image_credit": "Orren Jack Turner · public domain",
+      "image_license": "Public domain",
       "grayscale": true
     },
     {
@@ -71,6 +83,10 @@
       "category": "artis",
       "profession": "Microsoft Founder",
       "image": "famous-people/INTP/bill-gates.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Bill%20Gates%202018.jpg?width=480",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Bill_Gates_2018.jpg",
+      "image_credit": "Wikimedia Commons",
+      "image_license": "Lihat halaman sumber",
       "grayscale": true
     },
     {
@@ -109,6 +125,10 @@
       "category": "artis",
       "profession": "Apple Founder",
       "image": "famous-people/ENTJ/steve-jobs.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Steve%20Jobs%20Headshot%202010%20%28cropped%205%29.jpg?width=480",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Steve_Jobs_Headshot_2010_(cropped_5).jpg",
+      "image_credit": "Matt Yohe · Wikimedia Commons",
+      "image_license": "Creative Commons; lihat halaman sumber",
       "grayscale": true
     },
     {
@@ -116,6 +136,10 @@
       "category": "artis",
       "profession": "UK Prime Minister",
       "image": "famous-people/ENTJ/thatcher.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Margaret%20thatcher%202007.jpg?width=480",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Margaret_thatcher_2007.jpg",
+      "image_credit": "Steve Punter · CC BY 2.0",
+      "image_license": "CC BY 2.0",
       "grayscale": true
     },
     {
@@ -147,6 +171,10 @@
       "category": "artis",
       "profession": "Actor",
       "image": "famous-people/ENTP/rdj.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Robert%20Downey%20Jr.jpg?width=480",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Robert_Downey_Jr.jpg",
+      "image_credit": "Alan Light · Creative Commons",
+      "image_license": "Creative Commons Attribution; lihat halaman sumber",
       "grayscale": true
     },
     {
@@ -383,6 +411,10 @@
       "category": "artis",
       "profession": "Writer",
       "image": "famous-people/ESTP/hemingway.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Ernest%20Hemingway%20Portrait%201918%20-%20NARA%20-%20192668.jpg?width=480",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Ernest_Hemingway_Portrait_1918_-_NARA_-_192668.jpg",
+      "image_credit": "U.S. National Archives · public domain",
+      "image_license": "Public domain",
       "grayscale": true
     }
   ],
@@ -393,6 +425,10 @@
       "category": "artis",
       "profession": "Actress",
       "image": "famous-people/ESFP/marilyn.jpg",
+      "image_url": "https://commons.wikimedia.org/wiki/Special:Redirect/file/Marilyn%20Monroe%201947.jpg?width=480",
+      "image_source": "https://commons.wikimedia.org/wiki/File:Marilyn_Monroe_1947.jpg",
+      "image_credit": "Dave Cicero / INS · public domain (AS)",
+      "image_license": "Public domain di Amerika Serikat; lihat halaman sumber",
       "grayscale": true
     }
   ]

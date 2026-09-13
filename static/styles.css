@@ -24,3 +24,4 @@
 .insight-body{padding:0 20px 22px;font-size:.94rem;line-height:1.85}.insight-body p+p{margin-top:14px}.reason-quote{margin:0 0 18px;padding:16px 20px;border-left:3px solid var(--mint);background:#f3f8f5;color:#294b43;border-radius:0 12px 12px 0;overflow-wrap:anywhere;white-space:pre-wrap}.insight-choice{font-size:.8rem;color:var(--muted);margin-bottom:14px}.reading-panel .notice{margin:18px 0;font-size:.85rem}
 @media(max-width:760px){.section-link strong{font-size:.78rem}.insight-card>summary{padding:16px;gap:10px;flex-wrap:wrap}.insight-heading{min-width:70%}.insight-badge{margin-right:auto}.insight-body{padding:0 16px 18px}.stack-list{gap:7px}.cognitive-row-label>span{font-size:.8rem}.candidate-row{gap:10px}}
 @media(prefers-reduced-motion:reduce){.cognitive-fill{transition:none}}
+.image-credit{font-size:.7rem;color:var(--muted);text-decoration:underline;text-underline-offset:3px;margin-top:3px}

@@ -100,11 +100,18 @@ function drawPeople(){
     const avatar=element('div','person-avatar');
     const initials=person.name.split(/\s+/).slice(0,2).map(s=>[...s][0]).join('').toUpperCase();
     avatar.textContent=initials;avatar.setAttribute('aria-hidden','true');
-    if(typeof person.image==='string'&&/^\/famous-people\/[\w./-]+$/.test(person.image)){
+    const localImage=typeof person.image==='string'&&/^\/famous-people\/[\w./-]+$/.test(person.image);
+    const commonsImage=typeof person.image==='string'&&person.image.startsWith('https://commons.wikimedia.org/wiki/Special:Redirect/file/');
+    if(localImage||commonsImage){
       const img=element('img');img.loading='lazy';img.alt='';img.src=person.image;
       img.addEventListener('error',()=>{avatar.textContent=initials;},{once:true});avatar.replaceChildren(img);
     }
     card.append(avatar,element('h3','',person.name),element('p','',person.series||person.profession||''),element('span','person-category',CATEGORIES[person.category]||'Referensi'));
+    if(commonsImage&&typeof person.image_source==='string'&&person.image_source.startsWith('https://commons.wikimedia.org/wiki/File:')){
+      const credit=element('a','image-credit',person.image_credit||'Sumber gambar');
+      credit.href=person.image_source;credit.target='_blank';credit.rel='noopener noreferrer';
+      credit.title=person.image_license||'Lihat sumber dan lisensi';card.append(credit);
+    }
     grid.append(card);
   }
   $('people-empty').hidden=people.length>0;

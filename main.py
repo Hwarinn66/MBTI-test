@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -43,7 +44,8 @@ async def response_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data:; font-src 'self'; connect-src 'self'; "
+        "img-src 'self' data: https://commons.wikimedia.org https://upload.wikimedia.org https://thumb.wikimedia.org; "
+        "font-src 'self'; connect-src 'self'; "
         "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     )
     if request.url.path in ("/submit", "/questions", "/health", "/famous_people.json"):
@@ -89,7 +91,16 @@ def famous_people():
             for person in people:
                 image = person.get("image", "")
                 path = (BASE_DIR / image).resolve()
-                person["image"] = "/" + image if image and path.is_relative_to(BASE_DIR / "famous-people") and path.is_file() else None
+                local = "/" + image if image and path.is_relative_to(BASE_DIR / "famous-people") and path.is_file() else None
+                remote = person.get("image_url", "")
+                parsed = urlparse(remote)
+                trusted_remote = remote if (
+                    parsed.scheme == "https"
+                    and parsed.hostname == "commons.wikimedia.org"
+                    and parsed.path.startswith("/wiki/Special:Redirect/file/")
+                ) else None
+                person["image"] = local or trusted_remote
+                person.pop("image_url", None)
         return data
     except (OSError, ValueError, TypeError):
         return {}
