@@ -1,102 +1,179 @@
 {
-  "scope": "SYNTHETIC held-out semantic families only. NOT measured accuracy on people.",
+  "scope": "SYNTHETIC held-out semantic families after V1+V2 regrouping. NOT measured accuracy on people.",
   "real_world_validation": "not_performed",
+  "datasets": [
+    "data/cognitive_reasons.csv",
+    "data/cognitive_reasons_v2.csv"
+  ],
+  "dataset_sha256": "fe25d61d176319b49a044ea98eb498c52fd248b53b6bc8089b36dbc0ebaac4d6",
+  "dataset_sha256_by_file": {
+    "cognitive_reasons.csv": "c3411e853ae35ec7c4f864a71c10281aabe9c4eb32a1e1f56c69e8d25113955d",
+    "cognitive_reasons_v2.csv": "fee7efeea1c203527ac977097bdd8fa5eedf2d182ae35d56dda5be86ce1ad72a"
+  },
   "dataset_audit": {
-    "rows": 9000,
-    "unique_texts": 9000,
+    "rows": 25000,
+    "unique_texts": 25000,
     "split_counts": {
-      "train": 6000,
-      "validation": 1500,
-      "test": 1500
+      "train": 20912,
+      "validation": 2108,
+      "test": 1980
     },
     "label_counts": {
-      "Fe:mixed": 360,
-      "Fe:oppose": 360,
-      "Fe:support": 360,
-      "Fi:mixed": 360,
-      "Fi:oppose": 360,
-      "Fi:support": 360,
-      "Ne:mixed": 360,
-      "Ne:oppose": 360,
-      "Ne:support": 360,
-      "Ni:mixed": 360,
-      "Ni:oppose": 360,
-      "Ni:support": 360,
-      "Se:mixed": 360,
-      "Se:oppose": 360,
-      "Se:support": 360,
-      "Si:mixed": 360,
-      "Si:oppose": 360,
-      "Si:support": 360,
-      "Te:mixed": 360,
-      "Te:oppose": 360,
-      "Te:support": 360,
-      "Ti:mixed": 360,
-      "Ti:oppose": 360,
-      "Ti:support": 360,
-      "unknown": 360
+      "Fe:mixed": 1000,
+      "Fe:oppose": 1000,
+      "Fe:support": 1000,
+      "Fi:mixed": 1000,
+      "Fi:oppose": 1000,
+      "Fi:support": 1000,
+      "Ne:mixed": 1000,
+      "Ne:oppose": 1000,
+      "Ne:support": 1000,
+      "Ni:mixed": 1000,
+      "Ni:oppose": 1000,
+      "Ni:support": 1000,
+      "Se:mixed": 1000,
+      "Se:oppose": 1000,
+      "Se:support": 1000,
+      "Si:mixed": 1000,
+      "Si:oppose": 1000,
+      "Si:support": 1000,
+      "Te:mixed": 1000,
+      "Te:oppose": 1000,
+      "Te:support": 1000,
+      "Ti:mixed": 1000,
+      "Ti:oppose": 1000,
+      "Ti:support": 1000,
+      "unknown": 1000
     },
     "semantic_family_overlap": 0,
-    "real_respondents": 0
+    "real_respondents": 0,
+    "input_counts": {
+      "cognitive_reasons.csv": 9000,
+      "cognitive_reasons_v2.csv": 16000
+    },
+    "rows_before_dedup": 25000,
+    "rows_after_dedup": 25000,
+    "duplicates_removed": 0,
+    "unknown_labels_normalized": 640,
+    "family_split_counts": {
+      "Fe": {
+        "train": 12,
+        "validation": 2,
+        "test": 2,
+        "total": 16
+      },
+      "Fi": {
+        "train": 12,
+        "validation": 2,
+        "test": 2,
+        "total": 16
+      },
+      "Ne": {
+        "train": 12,
+        "validation": 2,
+        "test": 2,
+        "total": 16
+      },
+      "Ni": {
+        "train": 12,
+        "validation": 2,
+        "test": 2,
+        "total": 16
+      },
+      "Se": {
+        "train": 12,
+        "validation": 2,
+        "test": 2,
+        "total": 16
+      },
+      "Si": {
+        "train": 12,
+        "validation": 2,
+        "test": 2,
+        "total": 16
+      },
+      "Te": {
+        "train": 12,
+        "validation": 2,
+        "test": 2,
+        "total": 16
+      },
+      "Ti": {
+        "train": 12,
+        "validation": 2,
+        "test": 2,
+        "total": 16
+      },
+      "unknown": {
+        "train": 8,
+        "validation": 2,
+        "test": 2,
+        "total": 12
+      }
+    },
+    "generator_versions": {
+      "synthetic-cognitive-v1": 9000,
+      "synthetic-cognitive-v2": 16000
+    }
   },
   "features": "TF-IDF word unigrams+bigrams + character 3/4-grams; text only",
   "classifier": "multinomial LogisticRegression",
   "hyperparameter_search": [
     {
       "C": 0.3,
-      "validation_macro_f1": 0.38337064234670754
+      "validation_macro_f1": 0.8260755723286701
     },
     {
       "C": 1,
-      "validation_macro_f1": 0.40512028643710074
+      "validation_macro_f1": 0.8265681340796843
     },
     {
       "C": 4,
-      "validation_macro_f1": 0.4221704728340586
+      "validation_macro_f1": 0.8250359331015068
     },
     {
       "C": 12,
-      "validation_macro_f1": 0.4048243862571699
+      "validation_macro_f1": 0.8260656411903775
     }
   ],
   "hyperparameters": {
-    "C": 4,
+    "C": 1,
     "max_iter": 1000,
     "sublinear_tf": true
   },
   "validation_threshold_search": [
     {
       "threshold": 0.4,
-      "coverage": 0.2773333333333333,
-      "accepted_accuracy": 0.7716346153846154
+      "coverage": 0.7272296015180265,
+      "accepted_accuracy": 0.8473581213307241
     },
     {
       "threshold": 0.5,
-      "coverage": 0.15933333333333333,
-      "accepted_accuracy": 0.7238493723849372
+      "coverage": 0.44924098671726753,
+      "accepted_accuracy": 0.8711721224920802
     },
     {
       "threshold": 0.6,
-      "coverage": 0.0006666666666666666,
-      "accepted_accuracy": 1.0
+      "coverage": 0.21584440227703985,
+      "accepted_accuracy": 0.8989010989010989
     },
     {
       "threshold": 0.7,
-      "coverage": 0.0,
-      "accepted_accuracy": 0
+      "coverage": 0.11669829222011385,
+      "accepted_accuracy": 1.0
     },
     {
       "threshold": 0.8,
-      "coverage": 0.0,
-      "accepted_accuracy": 0
+      "coverage": 0.015654648956356737,
+      "accepted_accuracy": 1.0
     }
   ],
   "selected_threshold": 0.4,
-  "test_accuracy": 0.88,
-  "test_macro_f1": 0.8759999999999999,
-  "test_accepted_coverage": 0.19733333333333333,
+  "test_accuracy": 0.8717171717171717,
+  "test_macro_f1": 0.8700390798115006,
+  "test_accepted_coverage": 0.49393939393939396,
   "test_accepted_accuracy": 1.0,
-  "runtime_accepted_coverage": 0.19733333333333333,
+  "runtime_accepted_coverage": 0.49393939393939396,
   "runtime_accepted_accuracy": 1.0,
   "labels": [
     "Fe:mixed",
@@ -127,10 +204,37 @@
   ],
   "confusion_matrix": [
     [
-      30,
+      80,
       0,
       0,
-      30,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      80,
+      0,
+      0,
       0,
       0,
       0,
@@ -155,63 +259,9 @@
     ],
     [
       0,
-      30,
       0,
+      80,
       0,
-      30,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      30,
-      0,
-      0,
-      30,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0,
-      60,
       0,
       0,
       0,
@@ -238,8 +288,35 @@
       0,
       0,
       0,
+      76,
       0,
-      60,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      80,
       0,
       0,
       0,
@@ -267,37 +344,10 @@
       0,
       0,
       0,
-      60,
+      72,
       0,
       0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0
-    ],
-    [
-      30,
-      0,
-      0,
-      0,
-      0,
-      0,
-      30,
-      0,
-      0,
+      8,
       0,
       0,
       0,
@@ -317,13 +367,13 @@
     ],
     [
       0,
-      30,
       0,
       0,
       0,
       0,
       0,
-      30,
+      80,
+      0,
       0,
       0,
       0,
@@ -345,13 +395,13 @@
     [
       0,
       0,
-      30,
       0,
       0,
       0,
       0,
       0,
-      30,
+      80,
+      0,
       0,
       0,
       0,
@@ -378,8 +428,35 @@
       0,
       0,
       0,
+      78,
       0,
-      60,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      80,
       0,
       0,
       0,
@@ -407,7 +484,7 @@
       0,
       0,
       0,
-      60,
+      80,
       0,
       0,
       0,
@@ -435,7 +512,7 @@
       0,
       0,
       0,
-      60,
+      80,
       0,
       0,
       0,
@@ -463,7 +540,7 @@
       0,
       0,
       0,
-      60,
+      80,
       0,
       0,
       0,
@@ -491,7 +568,7 @@
       0,
       0,
       0,
-      60,
+      80,
       0,
       0,
       0,
@@ -519,7 +596,7 @@
       0,
       0,
       0,
-      60,
+      80,
       0,
       0,
       0,
@@ -547,40 +624,13 @@
       0,
       0,
       0,
-      60,
+      40,
       0,
       0,
       0,
       0,
       0,
-      0,
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      60,
-      0,
-      0,
-      0,
-      0,
-      0,
+      40,
       0,
       0,
       0
@@ -602,40 +652,13 @@
       0,
       0,
       0,
-      0,
-      60,
-      0,
+      40,
       0,
       0,
       0,
       0,
       0,
-      0
-    ],
-    [
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      60,
-      0,
-      0,
-      0,
-      0,
+      40,
       0,
       0
     ],
@@ -657,9 +680,36 @@
       0,
       0,
       0,
+      40,
       0,
       0,
-      60,
+      0,
+      0,
+      0,
+      40,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      80,
+      0,
       0,
       0,
       0,
@@ -686,8 +736,8 @@
       0,
       0,
       0,
+      80,
       0,
-      60,
       0,
       0,
       0,
@@ -714,8 +764,35 @@
       0,
       0,
       0,
+      80,
       0,
-      60,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      40,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      40,
       0,
       0,
       0
@@ -728,6 +805,7 @@
       0,
       0,
       0,
+      40,
       0,
       0,
       0,
@@ -742,8 +820,7 @@
       0,
       0,
       0,
-      0,
-      60,
+      40,
       0,
       0
     ],
@@ -756,6 +833,7 @@
       0,
       0,
       0,
+      40,
       0,
       0,
       0,
@@ -770,8 +848,7 @@
       0,
       0,
       0,
-      0,
-      60,
+      40,
       0
     ],
     [
@@ -804,148 +881,148 @@
   ],
   "classification_report": {
     "Fe:mixed": {
-      "precision": 0.5,
-      "recall": 0.5,
-      "f1-score": 0.5,
-      "support": 60.0
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 80.0
     },
     "Fe:oppose": {
-      "precision": 0.5,
-      "recall": 0.5,
-      "f1-score": 0.5,
-      "support": 60.0
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 80.0
     },
     "Fe:support": {
-      "precision": 0.5,
-      "recall": 0.5,
-      "f1-score": 0.5,
-      "support": 60.0
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 80.0
     },
     "Fi:mixed": {
-      "precision": 0.6666666666666666,
-      "recall": 1.0,
-      "f1-score": 0.8,
-      "support": 60.0
+      "precision": 1.0,
+      "recall": 0.95,
+      "f1-score": 0.9743589743589743,
+      "support": 80.0
     },
     "Fi:oppose": {
-      "precision": 0.6666666666666666,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1-score": 0.8,
-      "support": 60.0
+      "f1-score": 1.0,
+      "support": 80.0
     },
     "Fi:support": {
+      "precision": 1.0,
+      "recall": 0.9,
+      "f1-score": 0.9473684210526315,
+      "support": 80.0
+    },
+    "Ne:mixed": {
+      "precision": 0.6451612903225806,
+      "recall": 1.0,
+      "f1-score": 0.7843137254901961,
+      "support": 80.0
+    },
+    "Ne:oppose": {
       "precision": 0.6666666666666666,
       "recall": 1.0,
       "f1-score": 0.8,
-      "support": 60.0
-    },
-    "Ne:mixed": {
-      "precision": 1.0,
-      "recall": 0.5,
-      "f1-score": 0.6666666666666666,
-      "support": 60.0
-    },
-    "Ne:oppose": {
-      "precision": 1.0,
-      "recall": 0.5,
-      "f1-score": 0.6666666666666666,
-      "support": 60.0
+      "support": 80.0
     },
     "Ne:support": {
-      "precision": 1.0,
-      "recall": 0.5,
-      "f1-score": 0.6666666666666666,
-      "support": 60.0
+      "precision": 0.6190476190476191,
+      "recall": 0.975,
+      "f1-score": 0.7572815533980582,
+      "support": 80.0
     },
     "Ni:mixed": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 60.0
+      "support": 80.0
     },
     "Ni:oppose": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 60.0
+      "support": 80.0
     },
     "Ni:support": {
-      "precision": 1.0,
+      "precision": 0.975609756097561,
       "recall": 1.0,
-      "f1-score": 1.0,
-      "support": 60.0
+      "f1-score": 0.9876543209876543,
+      "support": 80.0
     },
     "Se:mixed": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 60.0
+      "support": 80.0
     },
     "Se:oppose": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 60.0
+      "support": 80.0
     },
     "Se:support": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 60.0
+      "support": 80.0
     },
     "Si:mixed": {
       "precision": 1.0,
-      "recall": 1.0,
-      "f1-score": 1.0,
-      "support": 60.0
+      "recall": 0.5,
+      "f1-score": 0.6666666666666666,
+      "support": 80.0
     },
     "Si:oppose": {
       "precision": 1.0,
-      "recall": 1.0,
-      "f1-score": 1.0,
-      "support": 60.0
+      "recall": 0.5,
+      "f1-score": 0.6666666666666666,
+      "support": 80.0
     },
     "Si:support": {
       "precision": 1.0,
-      "recall": 1.0,
-      "f1-score": 1.0,
-      "support": 60.0
+      "recall": 0.5,
+      "f1-score": 0.6666666666666666,
+      "support": 80.0
     },
     "Te:mixed": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 60.0
+      "support": 80.0
     },
     "Te:oppose": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 60.0
+      "support": 80.0
     },
     "Te:support": {
       "precision": 1.0,
       "recall": 1.0,
       "f1-score": 1.0,
-      "support": 60.0
+      "support": 80.0
     },
     "Ti:mixed": {
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1-score": 1.0,
-      "support": 60.0
+      "precision": 0.5,
+      "recall": 0.5,
+      "f1-score": 0.5,
+      "support": 80.0
     },
     "Ti:oppose": {
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1-score": 1.0,
-      "support": 60.0
+      "precision": 0.5,
+      "recall": 0.5,
+      "f1-score": 0.5,
+      "support": 80.0
     },
     "Ti:support": {
-      "precision": 1.0,
-      "recall": 1.0,
-      "f1-score": 1.0,
-      "support": 60.0
+      "precision": 0.5,
+      "recall": 0.5,
+      "f1-score": 0.5,
+      "support": 80.0
     },
     "unknown": {
       "precision": 1.0,
@@ -953,18 +1030,18 @@
       "f1-score": 1.0,
       "support": 60.0
     },
-    "accuracy": 0.88,
+    "accuracy": 0.8717171717171717,
     "macro avg": {
-      "precision": 0.9,
-      "recall": 0.88,
-      "f1-score": 0.8759999999999999,
-      "support": 1500.0
+      "precision": 0.8962594132853771,
+      "recall": 0.8730000000000001,
+      "f1-score": 0.8700390798115006,
+      "support": 1980.0
     },
     "weighted avg": {
-      "precision": 0.9,
-      "recall": 0.88,
-      "f1-score": 0.876,
-      "support": 1500.0
+      "precision": 0.895211528571088,
+      "recall": 0.8717171717171717,
+      "f1-score": 0.8687263432439399,
+      "support": 1980.0
     }
   },
   "portable_inference_parity": "passed, atol=1e-7"
