@@ -20,6 +20,22 @@ const TYPES = {
 
 const FUNCTIONS={Te:'Extraverted Thinking',Ti:'Introverted Thinking',Fe:'Extraverted Feeling',Fi:'Introverted Feeling',Ne:'Extraverted Intuition',Ni:'Introverted Intuition',Se:'Extraverted Sensing',Si:'Introverted Sensing'};
 const CATEGORIES={all:'Semua',anime:'Anime',artis:'Tokoh publik',movies:'Film & TV',kartun:'Kartun'};
+const RESULT_THEMES={
+  nt:{label:'NT · Ungu',color:'#4b277b'},
+  nf:{label:'NF · Hijau',color:'#235e43'},
+  sp:{label:'SP · Kuning',color:'#f7d665'},
+  sj:{label:'SJ · Biru',color:'#244e85'},
+};
+function applyResultTheme(type){
+  // The chosen type controls presentation, including tentative results.
+  // Never derive a theme from the runner-up or an unresolved candidate list.
+  const group=Object.hasOwn(TYPES,type)?(type[1]==='N'?(type[2]==='T'?'nt':'nf'):(type[3]==='P'?'sp':'sj')):null;
+  if(group)document.body.dataset.resultTheme=group;
+  else document.body.removeAttribute('data-result-theme');
+  const badge=$('result-family');
+  if(badge){badge.hidden=!group;badge.textContent=RESULT_THEMES[group]?.label||'';}
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',RESULT_THEMES[group]?.color||'#142e38');
+}
 let currentResult=null, allPeople=[], filter='all', count=8, toastTimer;
 const isNumber=value=>typeof value==='number'&&Number.isFinite(value);
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
@@ -144,6 +160,7 @@ async function share(){
 }
 export function renderResult(result){
   if(!validResult(result)){showInvalid();return;}
+  applyResultTheme(result.final_result);
   currentResult=result;$('empty-result').hidden=true;$('result-content').hidden=false;
   const type=result.final_result;
   const name=typeof result.user_name==='string'?result.user_name.slice(0,60).trim():'';
@@ -162,6 +179,7 @@ export function renderResult(result){
   $('share-result').onclick=share;
 }
 function showInvalid(){
+  applyResultTheme(null);
   $('empty-result').hidden=false;$('result-content').hidden=true;
   $('empty-title').textContent='Hasil lama perlu dihitung ulang.';
   $('empty-description').textContent='Tes sekarang menilai delapan fungsi kognitif. Hasil versi empat dimensi tidak dikonversi secara otomatis; silakan isi tes yang baru.';
