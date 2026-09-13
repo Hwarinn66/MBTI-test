@@ -63,9 +63,20 @@ class LocalClassifier:
             return {**empty, "status": "unsupported"}
         probs = self.probabilities(reason)
         label, score = max(probs.items(), key=lambda p: p[1])
-        if label == "unknown" or score < self.model["threshold"]:
+
+        # Be defensive with older/newer datasets that may encode unknown either
+        # as "unknown" or "unknown:unknown". Unknown is always an abstention,
+        # never a cognitive function to feed into scoring.
+        if label == "unknown" or label.startswith("unknown:") or score < self.model["threshold"]:
             return {**empty, "model_score": round(score, 4)}
-        f, stance = label.split(":")
+
+        parts = label.split(":", 1)
+        if len(parts) != 2:
+            return {**empty, "status": "invalid_label", "model_score": round(score, 4)}
+        f, stance = parts
+        if f not in {"Te", "Ti", "Fe", "Fi", "Ne", "Ni", "Se", "Si"} or stance not in {"support", "oppose", "mixed"}:
+            return {**empty, "status": "invalid_label", "model_score": round(score, 4)}
+
         negative = bool(re.search(r"\b(tidak|tak|bukan|jarang|enggan|belum|kurang)\b", normalize(reason)))
         situational = bool(re.search(r"\b(kadang|tergantung|bergantung|kalau|kecuali|sesekali|tapi|tetapi)\b", normalize(reason)))
         # Conservative guards: a bag-of-ngrams model cannot reliably resolve
