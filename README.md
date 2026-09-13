@@ -11,6 +11,7 @@ Web refleksi dengan 32 pertanyaan **fungsi kognitif**, klasifikasi alasan menggu
 - Netral menggunakan kategori `neutral`, dengan **−1 dan +1 disimpan terpisah**. Tidak diperlakukan sebagai angka nol.
 - Model klasifikasi teks hasil training sudah disertakan dalam `models/cognitive_text.json.gz`. Tidak perlu training tiap pengguna selesai tes.
 - Ulasan lokal membahas pilihan, kutipan asli, nomor soal, nuansa, dan keterbatasan bukti. Dua orang dengan tipe sama dapat mendapat ulasan berbeda.
+- Panjang ulasan mengikuti jumlah soal yang diberi alasan: setiap alasan dibahas, termasuk alasan pada soal terakhir. Halaman hasil menampilkan seluruh ulasan.
 - Mode generatif lokal tersedia untuk narasi lebih luwes, tetapi **memerlukan pemasangan model bahasa terpisah**. Jangan mengira mode standar adalah LLM.
 
 ## Menjalankan di VS Code / PowerShell
@@ -86,7 +87,20 @@ Qwen adalah model pralatih dari tim Qwen, **bukan model bahasa yang dilatih dari
 
 Model bahasa membutuhkan RAM lebih besar daripada ukuran file, dan dapat lambat pada CPU laptop. Sediakan ruang untuk model, cache konteks, dan aplikasi lain. Mulai dengan CPU (`0`); offload GPU memerlukan build CUDA yang cocok. Tidak ada klaim kecepatan atau penggunaan RAM yang telah diukur pada laptop pengguna.
 
-Narasi generatif membahas sampai empat alasan pertama agar konteks dan waktu terkendali. Rincian semua 32 soal tetap tersedia melalui penjelasan berbasis bukti. Hanya satu proses generatif dijalankan sekaligus; permintaan lain mendapat penjelasan standar. Jika model hilang, sibuk, timeout, atau mengarang kutipan/nomor soal yang terdeteksi, sistem kembali ke narasi berbasis bukti. Pemeriksaan ini tidak menjamin setiap tafsir semantik benar.
+### Panjang ulasan mengikuti jumlah alasan
+
+| Alasan yang diisi | Isi penjelasan utama |
+| --- | --- |
+| Tidak ada | Ringkasan pola pilihan, tanpa menebak motivasi |
+| 4–5 soal | Pembahasan 4–5 alasan, disertai ringkasan hasil |
+| 16 soal | Pembahasan seluruh 16 alasan dan pola berulang yang dikenali |
+| Hampir semua / 32 soal | Ulasan lebih panjang yang membahas setiap alasan dan menghubungkan pola berulang yang dikenali |
+
+Tidak ada target panjang yang dicapai dengan menambahkan kalimat pengisi. Setiap pembahasan merujuk nomor soal dan alasan terkait. Jumlah kata juga bergantung pada isi alasan; teks kosong atau hanya spasi tidak dihitung. Alasan yang belum dikenali tetap dibahas dengan batas bukti yang jelas. Mode standar menyusun kalimat berbasis bukti, sedangkan Qwen menghasilkan kalimat baru. Perubahan panjang narasi ini **tidak membutuhkan training ulang**.
+
+Narasi generatif memproses seluruh alasan dalam kelompok kecil, maksimal dua alasan per pemanggilan, dengan target satu paragraf 60–120 kata per alasan. Ini menjaga konteks model tetap kecil tanpa membatasi ulasan pada empat alasan pertama. Anggaran penghentian generasi adalah 60 detik per kelompok dan 120 detik bersama untuk satu hasil; waktu muat model / evaluasi satu langkah dapat membuat waktu nyata lebih lama. Hanya satu proses generatif dijalankan sekaligus; permintaan lain mendapat penjelasan standar.
+
+Jika sebagian kelompok gagal, waktunya habis, atau kutipan/nomor soal yang keliru terdeteksi, pembahasan standar untuk alasan itu tetap ditampilkan. Hasil yang sudah berhasil dipertahankan, bersama kesimpulan, catatan kandidat berdekatan, dan pola lintas soal. Status `partial` / mode `local_llm_mixed` berarti narasi gabungan; `generated_reason_count` menunjukkan jumlah alasan yang diulas model bahasa, sedangkan `discussed_reason_count` menghitung semua alasan yang dibahas. Jika tidak ada kelompok yang berhasil, seluruh narasi tetap berbasis bukti. Pemeriksaan struktur dan kutipan tidak menjamin setiap tafsir semantik benar.
 
 ## Metode scoring yang dapat ditinjau
 

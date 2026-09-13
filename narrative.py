@@ -72,8 +72,11 @@ def build_reflection(answers, predictions, functions, decision, name=""):
     if decision["status"] == "tentative":
         paragraphs.append("Pola ini belum cukup tegas. Perhatikan juga kandidat pembanding di bawah, terutama bagian alasan yang memberi pengecualian. Skor kecocokan bukan peluang bahwa tipemu pasti benar.")
     meaningful = [i for i in insights if i["reason"]]
-    ranked = sorted(meaningful, key=lambda i: (i["relationship"] != "contradictory", not i["text_recognized"], i["question_id"]))
-    for insight in ranked[:4]:
+    # One discussion per written reason, in question order. Keep the locations so
+    # the optional LLM can replace individual discussions without losing context.
+    reason_paragraph_indices = {}
+    for insight in meaningful:
+        reason_paragraph_indices[insight["question_id"]] = len(paragraphs)
         paragraphs.append(" ".join(insight["paragraphs"]))
     if not meaningful:
         paragraphs.append("Kali ini kamu belum menuliskan alasan. Aku bisa menunjukkan pola pilihanmu, tetapi belum bisa menjelaskan motivasi di baliknya. Kalau ingin refleksi lebih personal, ceritakan satu kejadian nyata pada beberapa soal yang paling terasa dekat.")
@@ -82,12 +85,13 @@ def build_reflection(answers, predictions, functions, decision, name=""):
         if insight["text_function"] and insight["text_stance"] == "support":
             grouped.setdefault(insight["text_function"], []).append(insight["question_id"])
     repeat = [(f, ids) for f, ids in grouped.items() if len(ids) > 1]
-    if repeat:
-        f, ids = max(repeat, key=lambda x: len(x[1]))
+    for f, ids in sorted(repeat, key=lambda item: (-len(item[1]), item[0])):
         paragraphs.append(f"Model menemukan petunjuk {f} pada alasan soal {', '.join(map(str, ids))}. Menarik untuk melihat apakah cara ini juga muncul di luar situasi tes. Pengulangan tulisan yang sama tetap dihitung satu kali, agar tidak membesar-besarkan bukti.")
     neutral_count = sum(a.choice == "neutral" for a in answers)
     if neutral_count:
         paragraphs.append(f"Ada {neutral_count} pilihan netral dalam jawabanmu. Semuanya menyimpan dua kontribusi, bukan nol. Untuk mengenal pola itu lebih jauh, coba pikirkan satu keadaan ketika kamu setuju dan satu keadaan ketika kamu tidak setuju.")
     paragraphs.append("Model teks ini belajar dari contoh sintetis, belum divalidasi pada responden nyata. Interpretasi fungsi adalah hipotesis dalam kerangka tipologi, bukan diagnosis atau pengukuran kemampuan kognitif. Ambil bagian yang membantu, dan pertanyakan bagian yang belum cocok dengan pengalamanmu.")
     return {"paragraphs": paragraphs, "question_insights": insights,
+            "reason_paragraph_indices": reason_paragraph_indices,
+            "discussed_reason_count": len(meaningful), "generated_reason_count": 0,
             "mode": "evidence_local", "local_llm_status": "not_requested"}

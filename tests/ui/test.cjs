@@ -5,7 +5,11 @@ const path=require('node:path');
 const {execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'../..');
 const fixture=JSON.parse(execFileSync(process.env.PYTHON||'python',['-c',
-  'import sys,json; sys.path.insert(0,"tests"); from test_app import payload; from main import questionnaire,submit_test,Submission,famous_people; print(json.dumps({"questions":questionnaire(),"payload":payload("ENTJ"),"result":submit_test(Submission(**payload("ENTJ"))),"neutral":submit_test(Submission(**payload())),"people":famous_people()}))'
+  ['import sys,json; sys.path.insert(0,"tests"); from test_app import payload; from main import questionnaire,submit_test,Submission,famous_people',
+   'rich = payload("ENTJ")',
+   'for answer in rich["answers"]: answer["reason"] = "Saat kegiatan ke-{}, aku mendengarkan sebelum ikut berdiskusi.".format(answer["id"])',
+   'print(json.dumps({"questions":questionnaire(),"payload":payload("ENTJ"),"result":submit_test(Submission(**payload("ENTJ"))),"neutral":submit_test(Submission(**payload())),"long_result":submit_test(Submission(**rich)),"people":famous_people()}))'
+  ].join('\n')
 ],{cwd:root,encoding:'utf8'}));
 const tick=()=>new Promise(resolve=>setTimeout(resolve,15));
 function create(file,options={}){
@@ -71,6 +75,18 @@ async function main(){
   assert.ok(w.document.querySelector('#share-text').value.includes('Te–Ni–Se–Fi'));
   assert.ok(!w.document.querySelector('#share-text').value.includes('<script>'));assert.equal(logs.length,0);dom.window.close();
   console.log('PASS 8 functions, ENTJ stack, candidates, per-question filter, XSS-safe quotes, sharing');
+  ({dom,w,logs}=create('result.html'));
+  const longResult=structuredClone(fixture.long_result);
+  longResult.reflection.mode='local_llm_mixed';longResult.reflection.local_llm_status='partial';longResult.reflection.generated_reason_count=2;
+  w.sessionStorage.setItem('mbti_result',JSON.stringify(longResult));run(w,'result.js');await tick();
+  const displayed=[...w.document.querySelectorAll('#ai-note p')].map(p=>p.textContent);
+  assert.ok(displayed.length>14);assert.deepEqual(displayed,longResult.reflection.paragraphs);
+  assert.ok(displayed.some(p=>p.startsWith('Di soal 32,')));
+  assert.ok(w.document.querySelector('#analysis-metrics').textContent.includes('32 alasan dibahas'));
+  assert.ok(w.document.querySelector('#analysis-source').textContent.includes('Narasi gabungan'));
+  assert.equal(w.document.querySelector('#narrator-notice').hidden,false);
+  assert.equal(w.document.querySelectorAll('.insight-card').length,32);assert.equal(logs.length,0);dom.window.close();
+  console.log('PASS complete 32-reason narrative beyond 14 paragraphs, final conclusion, partial-model notice');
   ({dom,w}=create('result.html'));w.sessionStorage.setItem('mbti_result',JSON.stringify(fixture.neutral));run(w,'result.js');await tick();
   assert.equal(w.document.querySelector('#mbti-type').textContent,'Belum pasti');assert.equal(w.document.querySelectorAll('.cognitive-row').length,8);assert.equal(w.document.querySelector('#people-section').hidden,true);dom.window.close();
   ({dom,w}=create('result.html'));w.sessionStorage.setItem('mbti_result',JSON.stringify({schema_version:1,final_result:'ENTJ'}));run(w,'result.js');await tick();assert.equal(w.document.querySelector('#empty-result').hidden,false);dom.window.close();

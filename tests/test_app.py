@@ -16,7 +16,7 @@ from generate_dataset import STEMS, build_rows, validate_rows
 from local_llm import LOCK, enhance_reflection, validate_paragraphs
 from main import AnswerItem, app
 from ml_local import MODEL_PATH, load_classifier
-from narrative import question_insight
+from narrative import build_reflection, question_insight
 from questions import CHOICES, QUESTIONS, QUESTIONNAIRE_VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -175,6 +175,33 @@ class AppTests(unittest.TestCase):
         self.assertNotEqual(first["reflection"]["paragraphs"], second["reflection"]["paragraphs"])
         self.assertIn("Aku suka berkumpul", " ".join(first["reflection"]["paragraphs"]))
 
+    def test_main_reflection_grows_and_discusses_every_written_reason(self):
+        previous_length = 0
+        # Include a late question even in the shortest nonempty submission.
+        order = [32] + list(range(1, 32))
+        for count in (0, 1, 4, 5, 16, 31, 32):
+            with self.subTest(reasons=count):
+                p = payload("ENTP")
+                filled = set(order[:count])
+                for answer in p["answers"]:
+                    answer["reason"] = (f"Dalam kegiatan ke-{answer['id']}, aku mendengarkan dahulu sebelum ikut berdiskusi."
+                                        if answer["id"] in filled else " \n\t ")
+                result = self.client.post("/submit", json=p).json()
+                reflection = result["reflection"]
+                self.assertEqual(result["reason_count"], count)
+                self.assertEqual(reflection["discussed_reason_count"], count)
+                indices = {int(q): i for q, i in reflection["reason_paragraph_indices"].items()}
+                self.assertEqual(set(indices), filled)
+                self.assertEqual(list(indices), sorted(filled))
+                for answer in p["answers"]:
+                    if answer["id"] in filled:
+                        discussion = reflection["paragraphs"][indices[answer["id"]]]
+                        self.assertIn(f"Di soal {answer['id']},", discussion)
+                        self.assertIn(answer["reason"], discussion)
+                length = len(" ".join(reflection["paragraphs"]))
+                self.assertGreater(length, previous_length)
+                previous_length = length
+
     def test_recognized_reason_can_change_a_close_stack_match(self):
         # Fixed ambiguous questionnaire: Ti is initially just ahead of Ne.
         # This is a pipeline regression case, not a human-label accuracy test.
@@ -282,8 +309,32 @@ class NarrationTests(unittest.TestCase):
         self.decision = {"type": "ENTP"}
         self.good = {"paragraphs": [{"question_ids": [1], "text": "Pada soal 1, kamu menulis “Aku suka berkumpul tapi aku jarang bicara”. Menarik untuk membedakan kebersamaan dengan keaktifan berbicara."}]}
 
+    def reflection(self, count):
+        answers = [AnswerItem(**a) for a in payload("ENTP")["answers"]]
+        for answer in answers[:count]:
+            answer.reason = self.selected[0]["reason"]
+        decision = {**self.decision, "stack": FUNCTION_STACKS["ENTP"], "status": "tentative"}
+        return build_reflection(answers, {}, {}, decision)
+
+    @staticmethod
+    def batch_response(**kwargs):
+        evidence = json.loads(kwargs["messages"][1]["content"])["evidence"]
+        rows = [{"question_ids": [i["question_id"]],
+                 "text": f"Pada soal {i['question_id']}, kamu menulis “{i['reason']}”. Menarik untuk membedakan kebersamaan dengan keaktifan berbicara."}
+                for i in reversed(evidence)]
+        return {"choices": [{"message": {"content": json.dumps({"paragraphs": rows})}}]}
+
     def test_valid_evidence_is_accepted(self):
         self.assertEqual(len(validate_paragraphs(self.good, self.selected, self.decision)), 1)
+
+    def test_omitted_duplicate_or_unreferenced_reasons_rejected(self):
+        selected = self.selected + [{**self.selected[0], "question_id": 2}]
+        for rows in (self.good["paragraphs"], self.good["paragraphs"] * 2,
+                     [{"question_ids": [1, 2], "text": self.good["paragraphs"][0]["text"]}] * 2):
+            with self.subTest(rows=rows), self.assertRaises(ValueError):
+                validate_paragraphs({"paragraphs": rows}, selected, self.decision)
+        with self.assertRaises(ValueError):
+            validate_paragraphs({"paragraphs": [{"question_ids": [1], "text": "Kamu tampaknya menikmati kebersamaan sambil tetap banyak mendengarkan."}]}, self.selected, self.decision)
 
     def test_fabricated_quotes_questions_functions_and_types_rejected(self):
         for text in ("Pada soal 99, kamu tampak suka berbicara dengan banyak teman.",
@@ -296,18 +347,83 @@ class NarrationTests(unittest.TestCase):
                 validate_paragraphs({"paragraphs": [{"question_ids": [1], "text": text}]}, self.selected, self.decision)
 
     def test_generative_adapter_with_fake_model_and_failure(self):
-        reflection = {"mode": "evidence_local", "paragraphs": ["Pembuka", "Kesimpulan", "Batasan"], "question_insights": self.selected}
+        reflection = self.reflection(1)
         fake_module = types.ModuleType("llama_cpp"); fake_module.StoppingCriteriaList = list
         model = Mock()
         model.create_chat_completion.return_value = {"choices": [{"message": {"content": json.dumps(self.good)}}]}
         with patch.dict("sys.modules", {"llama_cpp": fake_module}), patch("local_llm.availability", return_value="configured"), patch("local_llm._load_model", return_value=model):
             good = enhance_reflection(reflection, self.decision)
             self.assertEqual(good["mode"], "local_llm")
-            self.assertEqual(good["question_insights"], self.selected)
+            self.assertEqual(good["question_insights"], reflection["question_insights"])
             model.create_chat_completion.side_effect = RuntimeError("private model detail")
             bad = enhance_reflection(reflection, self.decision)
             self.assertEqual(bad["local_llm_status"], "fallback")
             self.assertNotIn("private model detail", json.dumps(bad))
+
+    def test_all_reasons_generated_in_small_batches_without_losing_summary(self):
+        fake_module = types.ModuleType("llama_cpp"); fake_module.StoppingCriteriaList = list
+        for count in (4, 5, 32):
+            with self.subTest(reasons=count):
+                reflection = self.reflection(count)
+                model = Mock(); model.create_chat_completion.side_effect = self.batch_response
+                with patch.dict("sys.modules", {"llama_cpp": fake_module}), patch("local_llm.availability", return_value="configured"), patch("local_llm._load_model", return_value=model):
+                    result = enhance_reflection(reflection, self.decision)
+                self.assertEqual(result["mode"], "local_llm")
+                self.assertEqual(result["local_llm_status"], "available")
+                self.assertEqual(result["generated_reason_count"], count)
+                self.assertEqual(result["discussed_reason_count"], count)
+                indices = reflection["reason_paragraph_indices"]
+                for question_id, index in indices.items():
+                    self.assertTrue(result["paragraphs"][index].startswith(f"Pada soal {question_id},"))
+                for index, original in enumerate(reflection["paragraphs"]):
+                    if index not in indices.values():
+                        self.assertEqual(result["paragraphs"][index], original)
+                self.assertEqual(result["question_insights"], reflection["question_insights"])
+                sent = []
+                for call in model.create_chat_completion.call_args_list:
+                    batch = json.loads(call.kwargs["messages"][1]["content"])["evidence"]
+                    self.assertLessEqual(len(batch), 2)
+                    sent.extend(i["question_id"] for i in batch)
+                self.assertEqual(sent, list(indices))
+
+    def test_failed_middle_batch_keeps_its_discussions_and_continues(self):
+        reflection = self.reflection(5)
+        fake_module = types.ModuleType("llama_cpp"); fake_module.StoppingCriteriaList = list
+        def respond(**kwargs):
+            batch = json.loads(kwargs["messages"][1]["content"])["evidence"]
+            if batch[0]["question_id"] == 3:
+                # A valid-looking response that silently omits one reason.
+                return {"choices": [{"message": {"content": json.dumps({"paragraphs": []})}}]}
+            return self.batch_response(**kwargs)
+        model = Mock(); model.create_chat_completion.side_effect = respond
+        with patch.dict("sys.modules", {"llama_cpp": fake_module}), patch("local_llm.availability", return_value="configured"), patch("local_llm._load_model", return_value=model):
+            result = enhance_reflection(reflection, self.decision)
+        self.assertEqual(result["mode"], "local_llm_mixed")
+        self.assertEqual(result["local_llm_status"], "partial")
+        self.assertEqual(result["generated_reason_count"], 3)
+        for question_id, index in reflection["reason_paragraph_indices"].items():
+            if question_id in (3, 4):
+                self.assertEqual(result["paragraphs"][index], reflection["paragraphs"][index])
+            else:
+                self.assertTrue(result["paragraphs"][index].startswith(f"Pada soal {question_id},"))
+        self.assertEqual(len(result["paragraphs"]), len(reflection["paragraphs"]))
+
+    def test_shared_timeout_keeps_all_unprocessed_reasons(self):
+        reflection = self.reflection(32)
+        fake_module = types.ModuleType("llama_cpp"); fake_module.StoppingCriteriaList = list
+        clock = [0]
+        def respond(**kwargs):
+            clock[0] = 121
+            self.assertTrue(kwargs["stopping_criteria"][0]())
+            return self.batch_response(**kwargs)
+        model = Mock(); model.create_chat_completion.side_effect = respond
+        with patch.dict("sys.modules", {"llama_cpp": fake_module}), patch("local_llm.availability", return_value="configured"), patch("local_llm._load_model", return_value=model), patch("local_llm.time.monotonic", side_effect=lambda: clock[0]):
+            result = enhance_reflection(reflection, self.decision)
+        self.assertEqual(model.create_chat_completion.call_count, 1)
+        self.assertEqual(result["local_llm_status"], "partial")
+        self.assertEqual(result["generated_reason_count"], 2)
+        self.assertEqual(result["discussed_reason_count"], 32)
+        self.assertEqual(result["paragraphs"][reflection["reason_paragraph_indices"][32]], reflection["paragraphs"][reflection["reason_paragraph_indices"][32]])
 
     def test_busy_model_never_queues_unbounded_requests(self):
         reflection = {"question_insights": self.selected, "paragraphs": ["Fallback"]}

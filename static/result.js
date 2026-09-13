@@ -76,12 +76,16 @@ function renderFunctions(result){
 function renderAnalysis(result){
   const reflection=result.reflection;
   const generative=reflection.mode==='local_llm';
-  $('analysis-source').textContent=generative?'Narasi model bahasa lokal · berjalan di server ini, tanpa API AI eksternal.':'Narasi lokal berbasis bukti · disusun dari kutipan, pilihan, dan hasil klasifikasi teks.';
+  const mixed=reflection.mode==='local_llm_mixed';
+  $('analysis-source').textContent=mixed?'Narasi gabungan · model bahasa lokal dan penjelasan berbasis bukti.':generative?'Narasi model bahasa lokal · berjalan di server ini, tanpa API AI eksternal.':'Narasi lokal berbasis bukti · disusun dari kutipan, pilihan, dan hasil klasifikasi teks.';
   const note=$('ai-note');note.replaceChildren();
-  reflection.paragraphs.filter(p=>typeof p==='string').slice(0,14).forEach(p=>note.append(element('p','',p.slice(0,6000))));
+  // Covers all 32 reasons, up to 8 recurring patterns, and the introduction /
+  // conclusion. Keep a generous bound for malformed stored results.
+  reflection.paragraphs.filter(p=>typeof p==='string').slice(0,64).forEach(p=>note.append(element('p','',p.slice(0,6000))));
   $('analysis-metrics').textContent=result.neutral_count+' jawaban netral · '+result.reason_count+' alasan tertulis · '+result.recognized_reason_count+' alasan dikenali model';
+  if(Number.isInteger(reflection.discussed_reason_count)&&reflection.discussed_reason_count>=0&&reflection.discussed_reason_count<=32)$('analysis-metrics').textContent+=' · '+reflection.discussed_reason_count+' alasan dibahas';
   const llmStatus=reflection.local_llm_status;
-  const hints={not_configured:'Model bahasa lokal belum dipasang. Yang tampil adalah narasi berbasis bukti, bukan tulisan model generatif.',runtime_missing:'File model tersedia, tetapi runtime llama-cpp-python belum dipasang.',fallback:'Model bahasa lokal belum menghasilkan narasi yang lolos pemeriksaan. Narasi berbasis bukti tetap tersedia.',busy:'Model bahasa lokal sedang digunakan. Narasi berbasis bukti tetap ditampilkan.',no_reasons:'Narasi generatif memerlukan alasan tertulis; hasil pilihan tetap tersedia.'};
+  const hints={not_configured:'Model bahasa lokal belum dipasang. Yang tampil adalah narasi berbasis bukti, bukan tulisan model generatif.',runtime_missing:'File model tersedia, tetapi runtime llama-cpp-python belum dipasang.',fallback:'Model bahasa lokal belum menghasilkan narasi yang lolos pemeriksaan. Narasi berbasis bukti tetap tersedia.',partial:'Model bahasa lokal baru menyelesaikan sebagian alasan. Pembahasan alasan lainnya tetap disajikan memakai penjelasan berbasis bukti.',busy:'Model bahasa lokal sedang digunakan. Narasi berbasis bukti tetap ditampilkan.',no_reasons:'Narasi generatif memerlukan alasan tertulis; hasil pilihan tetap tersedia.'};
   $('narrator-notice').hidden=!hints[llmStatus];$('narrator-notice').textContent=hints[llmStatus]||'';
   const select=$('reason-filter');select.checked=result.reason_count>0;
   const draw=()=>{
