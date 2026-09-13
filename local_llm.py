@@ -18,8 +18,8 @@ LOCK = threading.Lock()
 _model = None
 logger = logging.getLogger(__name__)
 BATCH_SIZE = 2
-BATCH_SECONDS = 75
-TOTAL_SECONDS = 150
+BATCH_SECONDS = 420
+TOTAL_SECONDS = 840
 
 
 def model_path():
@@ -95,10 +95,6 @@ def _validate_row(row, by_id, decision, require_text_reference=True):
     if re.search(r"<|>|https?://|\bpasti\b|diagnosis|gangguan|terbukti secara ilmiah", text, re.I):
         raise ValueError("Unsupported claim")
 
-    # question_ids already binds this paragraph to one known evidence item. The
-    # strict public validator still requires the visible number for regression
-    # tests; runtime validation does not discard a good paragraph merely because
-    # a small model omitted the literal phrase "soal N".
     references = re.findall(r"(?:soal|pertanyaan)\s*(?:nomor\s*)?(\d+)", text, re.I)
     if require_text_reference and str(question_id) not in references:
         raise ValueError("Missing evidence reference")
