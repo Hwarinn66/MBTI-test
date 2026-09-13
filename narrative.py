@@ -1,5 +1,6 @@
 """Evidence-grounded Indonesian reflection; no network calls, no invented quotes."""
 import re
+from collections import Counter
 from cognitive import FUNCTIONS
 from questions import CHOICES, QUESTION_BY_ID
 
@@ -13,55 +14,59 @@ def question_insight(answer, prediction):
     neutral = answer.choice == "neutral"
     effective = 0 if neutral else answer.choice * q["direction"]
     relationship = "empty"
+
     if not reason:
         paragraphs = [f"Pada soal {q['id']}, kamu memilih {LABELS[answer.choice].lower()}."]
         if neutral:
-            paragraphs.append("Pilihan ini tetap dihitung: +1 sebagai dukungan dan −1 sebagai penolakan disimpan terpisah. Aku membacanya sebagai kadang iya, kadang tidak, bukan jawaban yang diabaikan.")
+            paragraphs.append("Pilihan netral tetap dihitung sebagai dua sisi yang tersimpan terpisah: dukungan dan penolakan. Karena tidak ada alasan tertulis, analisis bagian ini memakai pilihan jawaban saja.")
         else:
             action = "mendukung" if effective > 0 else "kurang mendukung"
-            paragraphs.append(f"Dengan arah pernyataan soal ini, pilihanmu {action} pola {f}. Karena belum ada alasan tertulis, aku tidak akan menebak situasi atau motivasimu.")
+            paragraphs.append(f"Dengan arah pernyataan soal ini, pilihanmu {action} pola {f}. Karena tidak ada alasan tertulis, fungsi tambahan tidak ditetapkan dari teks.")
     else:
         paragraphs = [f"Di soal {q['id']}, kamu memilih {LABELS[answer.choice].lower()}, lalu menulis: “{reason}”"]
         qualified = bool(re.search(r"\b(tapi|tetapi|namun|tergantung|kadang|kalau|kecuali)\b", reason, re.I))
-        if prediction.get("accepted"):
+
+        if prediction.get("accepted") and prediction.get("function") in FUNCTIONS:
             pf, stance = prediction["function"], prediction["stance"]
-            meaning = FUNCTIONS[pf]["meaning"]
+            info = FUNCTIONS[pf]
+            prefix = f"Fungsi kognitif paling dekat dari alasan ini: {pf} ({info['name']}) — {info['title']}."
             if stance == "support":
-                paragraphs.append(f"Yang menarik di sini adalah cara kamu menjelaskan pertimbanganmu. Pola bahasanya mendekati {pf}: {meaning}. Ini petunjuk dari tulisanmu, belum kesimpulan tentang dirimu secara utuh.")
+                explanation = f"Isi alasanmu menunjukkan pola {pf}, yaitu {info['meaning']}."
             elif stance == "oppose":
-                paragraphs.append(f"Model membaca alasan ini sebagai kurang mendukung pola {pf}, yaitu {meaning}. Tidak memilih cara itu dalam satu keadaan bukan berarti kamu tidak pernah menggunakannya.")
+                explanation = f"Isi alasanmu paling dekat dengan tema {pf}, tetapi melalui sikap yang berlawanan terhadap pola {info['meaning']}."
             else:
-                paragraphs.append(f"Alasanmu memberi ruang bagi penggunaan {pf} yang bergantung situasi, yaitu {meaning}. Jadi aku tidak membacanya sebagai iya atau tidak yang mutlak.")
+                explanation = f"Isi alasanmu paling dekat dengan {pf} dalam bentuk yang situasional atau bercampur, yaitu {info['meaning']}."
+            paragraphs.append(f"{prefix} {explanation}")
+
             relationship = "qualified" if neutral or qualified or stance == "mixed" else "other_function" if pf != f else "aligned"
             if pf == f and not neutral and stance != "mixed":
                 agrees = (effective > 0) == (stance == "support")
                 if not agrees:
                     relationship = "contradictory"
-                    paragraphs.append("Ada perbedaan antara arah pilihanmu dan pola yang terbaca dari alasanmu. Keduanya tetap dicatat; model tidak otomatis menganggap pilihanmu salah. Bisa jadi konteks soal dan situasi yang kamu bayangkan berbeda.")
+                    paragraphs.append("Arah pilihan dan alasanmu berbeda, jadi sistem menyimpan keduanya sebagai dua sumber informasi yang tidak identik. Fungsi dari alasan tetap ditetapkan berdasarkan isi teks yang kamu tulis.")
             if pf != f:
-                paragraphs.append(f"Soal ini terutama memeriksa {f}, sedangkan alasanmu memberi petunjuk tentang {pf}. Ini tambahan konteks, bukan otomatis pertentangan.")
+                paragraphs.append(f"Soal ini terutama memeriksa {f}, sedangkan alasanmu diklasifikasikan paling dekat dengan {pf}. Karena itu alasanmu menambah konteks fungsi yang berbeda dari fungsi utama soal.")
         else:
-            relationship = "qualified" if qualified else "unclear"
-            # A factual, narrow observation; quiet social behavior is NOT Si.
-            if re.search(r"berkumpul|keramaian", reason, re.I) and re.search(r"jarang (?:berbicara|bicara)|diam|tidak banyak (?:bicara|berbicara)", reason, re.I):
-                paragraphs.append("Kamu membedakan menikmati kebersamaan dengan seberapa banyak kamu berbicara. Keduanya memang tidak harus sama. Kalimat ini saja belum cukup untuk menyebut Si, Fe, atau fungsi tertentu; aku perlu tahu apa yang kamu perhatikan dan pertimbangkan saat berkumpul.")
-            elif qualified:
-                paragraphs.append("Ada konteks atau pengecualian dalam alasanmu. Aku tidak ingin mengubahnya menjadi label yang terlalu tegas: model belum menemukan petunjuk fungsi yang cukup jelas pada kalimat ini.")
-            else:
-                paragraphs.append("Terima kasih sudah memberi konteks. Dari kalimat ini, model belum cukup yakin mengenali pola fungsi tertentu. Jadi alasannya tetap ditampilkan, tetapi tidak ditambahkan sebagai bukti fungsi kognitif.")
+            # This path is only a defensive fallback when the text model itself
+            # cannot be loaded or returns an invalid class. Normal runtime now
+            # assigns a best-match function to every non-empty reason.
+            relationship = "unclear"
+            paragraphs.append(f"Alasan ini belum dapat diklasifikasikan oleh model teks, sehingga pembahasan sementara mengikuti fungsi utama soal, yaitu {f}.")
+
         if neutral:
-            paragraphs.append("Jawaban netralmu tetap membawa +1 dukungan dan −1 penolakan secara terpisah. Alasanmu membantu menjelaskan kapan masing-masing sisi muncul.")
+            paragraphs.append("Pilihan netralmu tetap membawa dukungan dan penolakan secara terpisah, sedangkan alasan tertulis menentukan fungsi kognitif yang paling dekat dari konteks yang kamu berikan.")
+
     return {"question_id": q["id"], "question": q["text"], "choice": answer.choice,
             "choice_label": LABELS[answer.choice], "question_function": f,
             "reason": reason, "relationship": relationship,
             "text_function": prediction.get("function") if prediction.get("accepted") else None,
             "text_stance": prediction.get("stance", "unknown"),
             "text_recognized": bool(prediction.get("accepted")),
+            "text_score": prediction.get("model_score", 0.0),
             "paragraphs": paragraphs, "evidence": [reason] if reason else []}
 
 
 def profile_opening(name, age, gender, reason_count):
-    """Use only the profile the user supplied; infer no demographic traits."""
     greeting = f"Halo {name.strip()}," if name.strip() else "Halo,"
     parts = [f"{greeting} aku asisten AI lokal yang akan menemanimu memahami hasil tes ini."]
     if gender and age is not None:
@@ -71,9 +76,38 @@ def profile_opening(name, age, gender, reason_count):
     elif gender:
         parts.append(f"Kamu memperkenalkan diri sebagai {gender.lower()}.")
     if reason_count:
-        parts.append(f"Terima kasih sudah membagikan alasan pada {reason_count} soal. Aku akan membacanya bersama pilihanmu untuk melihat pola yang muncul dan konteks di baliknya.")
+        parts.append(f"Kamu menuliskan alasan pada {reason_count} soal. Setiap alasan akan diklasifikasikan ke fungsi kognitif yang paling dekat, lalu dibaca bersama pola pilihan jawabanmu.")
     else:
-        parts.append("Terima kasih sudah meluangkan waktu untuk mengisi tes ini. Mari kita mulai dari pola pilihan jawabanmu.")
+        parts.append("Kamu belum menuliskan alasan, jadi hasil utama akan dibaca dari pola pilihan jawabanmu.")
+    return " ".join(parts)
+
+
+def _overall_conclusion(meaningful, functions, decision):
+    ranked = sorted(FUNCTIONS, key=lambda f: (-functions[f]["index"], f))
+    first, second = ranked[:2]
+    counts = Counter(i["text_function"] for i in meaningful if i["text_function"] in FUNCTIONS)
+    reason_ranked = [f for f, _ in counts.most_common()]
+
+    parts = [
+        "Kesimpulan utama:",
+        f"secara keseluruhan, pola terkuatmu berada pada {first} ({FUNCTIONS[first]['title']}) dan {second} ({FUNCTIONS[second]['title']}).",
+        f"Ini menggambarkan kecenderungan untuk {FUNCTIONS[first]['meaning']}, sambil juga {FUNCTIONS[second]['meaning']}.",
+    ]
+    if reason_ranked:
+        top_reason = reason_ranked[0]
+        parts.append(
+            f"Dari alasan yang kamu tulis, fungsi yang paling sering muncul adalah {top_reason} ({FUNCTIONS[top_reason]['name']}), sehingga cara kamu menjelaskan keputusan paling sering bergerak di sekitar pola {FUNCTIONS[top_reason]['meaning']}."
+        )
+        if len(reason_ranked) > 1:
+            second_reason = reason_ranked[1]
+            parts.append(
+                f"Pola pendamping yang juga terlihat adalah {second_reason}, yaitu {FUNCTIONS[second_reason]['meaning']}."
+            )
+    if decision.get("type"):
+        parts.append(
+            f"Dalam kerangka MBTI berbasis fungsi yang dipakai tes ini, susunan keseluruhanmu paling dekat dengan {decision['type']} ({'–'.join(decision['stack'])})."
+        )
+    parts.append("Jadi, gambaran utamanya adalah cara berpikirmu memiliki pola yang cukup konsisten antara fungsi yang dominan pada jawaban dan cara kamu memberi alasan.")
     return " ".join(parts)
 
 
@@ -82,33 +116,45 @@ def build_reflection(answers, predictions, functions, decision, name="", age=Non
     meaningful = [i for i in insights if i["reason"]]
     opening = profile_opening(name, age, gender, len(meaningful))
     paragraphs = [opening]
+
     if decision["type"]:
         stack = "–".join(decision["stack"])
-        paragraphs.append(f"Dari pola delapan fungsi pada tes ini, kandidat terdekatmu adalah {decision['type']} dengan susunan {stack}. Tipe ini diperoleh setelah skor fungsi dihitung, bukan dari penjumlahan pasangan huruf. Anggap ini titik awal refleksi, bukan label yang harus selalu cocok denganmu.")
+        paragraphs.append(f"Dari pola delapan fungsi pada tes ini, kandidat utamamu adalah {decision['type']} dengan susunan {stack}. Tipe ini diperoleh setelah skor seluruh fungsi dihitung, bukan dari penjumlahan pasangan huruf.")
     else:
-        paragraphs.append("Aku belum bisa memilih satu susunan fungsi yang cukup berbeda dari kandidat lainnya. Jawaban yang seimbang atau bergantung situasi tetap bermakna; kamu tidak perlu mengubahnya hanya agar memperoleh empat huruf.")
-    if decision["status"] == "tentative":
-        paragraphs.append("Pola ini belum cukup tegas. Perhatikan juga kandidat pembanding di bawah, terutama bagian alasan yang memberi pengecualian. Skor kecocokan bukan peluang bahwa tipemu pasti benar.")
-    # One discussion per written reason, in question order. Keep the locations so
-    # the optional LLM can replace individual discussions without losing context.
+        top_candidate = decision["candidates"][0]
+        paragraphs.append(f"Pola fungsi terdekatmu saat ini adalah {top_candidate['type']} dengan susunan {'–'.join(top_candidate['stack'])}. Sistem tetap menampilkan kandidat terdekat berdasarkan skor delapan fungsi meskipun profil keseluruhannya sangat berimbang.")
+
+    if decision["status"] == "tentative" and decision["type"]:
+        paragraphs.append(f"Kandidat utama tetap {decision['type']}; kandidat lain berada cukup dekat pada skor kecocokan, tetapi hasil yang digunakan sebagai acuan utama tetap tipe tersebut.")
+
     reason_paragraph_indices = {}
     for insight in meaningful:
         reason_paragraph_indices[insight["question_id"]] = len(paragraphs)
         paragraphs.append(" ".join(insight["paragraphs"]))
+
     if not meaningful:
-        paragraphs.append("Kali ini kamu belum menuliskan alasan. Aku bisa menunjukkan pola pilihanmu, tetapi belum bisa menjelaskan motivasi di baliknya. Kalau ingin refleksi lebih personal, ceritakan satu kejadian nyata pada beberapa soal yang paling terasa dekat.")
+        paragraphs.append("Karena tidak ada alasan tertulis, pembahasan personal terutama memakai pola pilihan jawaban dan skor delapan fungsi kognitif.")
+
     grouped = {}
     for insight in meaningful:
-        if insight["text_function"] and insight["text_stance"] == "support":
+        if insight["text_function"]:
             grouped.setdefault(insight["text_function"], []).append(insight["question_id"])
     repeat = [(f, ids) for f, ids in grouped.items() if len(ids) > 1]
     for f, ids in sorted(repeat, key=lambda item: (-len(item[1]), item[0])):
-        paragraphs.append(f"Model menemukan petunjuk {f} pada alasan soal {', '.join(map(str, ids))}. Menarik untuk melihat apakah cara ini juga muncul di luar situasi tes. Pengulangan tulisan yang sama tetap dihitung satu kali, agar tidak membesar-besarkan bukti.")
+        paragraphs.append(f"Fungsi {f} muncul berulang pada alasan soal {', '.join(map(str, ids))}. Pengulangan ini menunjukkan bahwa pola {FUNCTIONS[f]['meaning']} cukup sering muncul dalam cara kamu menjelaskan pilihan.")
+
     neutral_count = sum(a.choice == "neutral" for a in answers)
     if neutral_count:
-        paragraphs.append(f"Ada {neutral_count} pilihan netral dalam jawabanmu. Semuanya menyimpan dua kontribusi, bukan nol. Untuk mengenal pola itu lebih jauh, coba pikirkan satu keadaan ketika kamu setuju dan satu keadaan ketika kamu tidak setuju.")
-    paragraphs.append("Model teks ini belajar dari contoh sintetis, belum divalidasi pada responden nyata. Interpretasi fungsi adalah hipotesis dalam kerangka tipologi, bukan diagnosis atau pengukuran kemampuan kognitif. Ambil bagian yang membantu, dan pertanyakan bagian yang belum cocok dengan pengalamanmu.")
+        paragraphs.append(f"Ada {neutral_count} pilihan netral. Pilihan tersebut tetap menyimpan dua sisi kontribusi, sementara alasan tertulis tetap diklasifikasikan ke fungsi kognitif yang paling dekat.")
+
+    # Keep the methodology note before the final summary so the user's requested
+    # overall conclusion is literally the last explanatory paragraph.
+    paragraphs.append("Model teks ini belajar dari contoh sintetis dan belum divalidasi pada responden nyata. Karena setiap alasan nonkosong dipaksa ke fungsi best-match, alasan yang sangat pendek atau kurang relevan dapat menghasilkan klasifikasi yang kurang tepat. Semakin jelas dan konkret alasan yang ditulis, semakin berguna interpretasinya.")
+    overall_conclusion_index = len(paragraphs)
+    paragraphs.append(_overall_conclusion(meaningful, functions, decision))
+
     return {"paragraphs": paragraphs, "question_insights": insights,
             "reason_paragraph_indices": reason_paragraph_indices,
+            "overall_conclusion_index": overall_conclusion_index,
             "discussed_reason_count": len(meaningful), "generated_reason_count": 0,
             "mode": "evidence_local", "local_llm_status": "not_requested"}
