@@ -2,8 +2,8 @@
 
 JSON coefficients are data, not executable pickle. No networking or downloads.
 For every non-empty written reason, runtime returns the closest supported
-cognitive-function class. Scores are retained for debugging/weighting only;
-they no longer act as an abstention threshold.
+cognitive-function class. Raw model confidence is retained for diagnostics,
+but best-match reasons use full text-evidence weight in scoring.
 """
 import gzip
 import json
@@ -28,7 +28,6 @@ def normalize(text):
 
 def features(text):
     tokens = TOKEN_RE.findall(normalize(text))
-    # Subword features help Indonesian affixes without fetching a language model.
     grams = []
     for token in tokens:
         word = " " + token + " "
@@ -64,22 +63,24 @@ class LocalClassifier:
     def predict(self, reason):
         reason = reason.strip()
         empty = {"accepted": False, "function": None, "stance": "unknown", "model_score": 0.0,
-                 "evidence": reason, "status": "empty" if not reason else "invalid_label"}
+                 "raw_model_score": 0.0, "evidence": reason,
+                 "status": "empty" if not reason else "invalid_label"}
         if not reason:
             return empty
 
         probs = self.probabilities(reason)
-        # Unknown remains useful during training/evaluation, but the product
-        # behaviour requested here is best-match classification: every written
-        # reason receives the closest one of the eight cognitive functions.
         candidates = [(label, score) for label, score in probs.items() if self._valid_label(label)]
         if not candidates:
             return empty
-        label, score = max(candidates, key=lambda p: p[1])
+        label, raw_score = max(candidates, key=lambda p: p[1])
         f, stance = label.split(":", 1)
 
+        # Product behaviour is intentionally decisive: every written reason is
+        # a full-weight best match. raw_model_score remains available for audit
+        # and debugging but is not shown as hesitation to the user.
         return {**empty, "accepted": True, "function": f, "stance": stance,
-                "model_score": round(score, 4), "status": "best_match"}
+                "model_score": 1.0, "raw_model_score": round(raw_score, 4),
+                "status": "best_match"}
 
 
 @lru_cache(maxsize=1)
