@@ -43,7 +43,15 @@
             <div class="question-topline"><span class="pill"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#circle-check"/></svg>Langkah terakhir</span><span class="question-counter">REFLEKSI SELESAI</span></div>
             <h2 id="review-title" tabindex="-1">Sudah terasa seperti dirimu?</h2><p class="muted">Kamu bisa meninjau jawaban sebelum melihat hasilnya.</p>
             <div id="review-grid" class="review-grid" aria-label="Tinjau jawaban"></div>
-            <details class="profile-block"><summary>Tambahkan profil <span class="optional">Opsional</span></summary><div class="profile-fields"><label>Nama panggilan<input id="user-name" maxlength="60" autocomplete="given-name" placeholder="Panggil aku…"></label><label>Usia<input id="user-age" type="number" min="13" max="100" inputmode="numeric" placeholder="13–100"></label><label>Gender<select id="user-gender"><option value="">Tidak disebutkan</option><option>Perempuan</option><option>Laki-laki</option></select></label></div></details>
+            <details class="profile-block" open>
+              <summary>Personalisasi penjelasan <span class="optional">Opsional</span></summary>
+              <p id="profile-hint" class="field-hint">Nama, usia, dan gender yang kamu isi akan disebut di pengantar ulasan. Kamu boleh mengosongkan kolom mana pun.</p>
+              <div class="profile-fields">
+                <label>Nama panggilan<input id="user-name" maxlength="60" autocomplete="given-name" aria-describedby="profile-hint" placeholder="Panggil aku…"></label>
+                <label>Usia (tahun)<input id="user-age" type="number" min="13" max="100" step="1" inputmode="numeric" aria-describedby="profile-hint" placeholder="13–100"></label>
+                <label>Gender<select id="user-gender" aria-describedby="profile-hint"><option value="">Tidak ingin menyebutkan</option><option>Perempuan</option><option>Laki-laki</option><option>Nonbiner</option></select></label>
+              </div>
+            </details>
             <div class="local-analysis-note"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#shield-check"/></svg><div><strong>Analisis lokal, tanpa Gemini</strong><p>Pilihan dan alasan dinilai oleh model lokal. Tidak dikirim ke penyedia AI eksternal. Model penelitian ini menggunakan data sintetis.</p></div></div>
             <div class="ai-option"><label class="check-label"><input type="checkbox" id="use-local-llm"><span><strong><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#sparkles"/></svg>Narasi generatif lokal <span class="optional">Opsional</span></strong><small id="local-model-notice">Memeriksa model bahasa lokal…</small></span></label></div>
             <p id="submit-error" class="error-message" role="alert" hidden></p>

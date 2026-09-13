@@ -40,8 +40,9 @@ function restoreDraft() {
     current = Number.isInteger(saved.current) ? Math.max(0,Math.min(questions.length-1,saved.current)) : 0;
     const profile = saved.profile || {};
     $('user-name').value = typeof profile.name === 'string' ? profile.name.slice(0,60) : '';
-    $('user-age').value = /^\d{1,3}$/.test(String(profile.age)) ? profile.age : '';
-    $('user-gender').value = ['Perempuan','Laki-laki'].includes(profile.gender) ? profile.gender : '';
+    const age = Number(profile.age);
+    $('user-age').value = Number.isInteger(age)&&age>=13&&age<=100 ? String(age) : '';
+    $('user-gender').value = ['Perempuan','Laki-laki','Nonbiner'].includes(profile.gender) ? profile.gender : '';
     $('use-local-llm').checked = profile.local_llm === true;
   } catch { try { sessionStorage.removeItem(DRAFT_KEY); } catch { storageAvailable=false; storageNotice(); } }
 }
@@ -157,7 +158,7 @@ async function submit() {
   const missing=questions.findIndex(q=>!validChoice(answers[q.id]?.choice));
   if(missing!==-1){current=missing;renderQuestion(true);return;}
   const age=$('user-age');
-  if(age.value&&!age.checkValidity()){
+  if(!age.checkValidity()){
     document.querySelector('.profile-block').open=true;age.reportValidity();return;
   }
   $('submit-error').hidden=true;saveDraft();

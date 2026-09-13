@@ -8,7 +8,9 @@ const fixture=JSON.parse(execFileSync(process.env.PYTHON||'python',['-c',
   ['import sys,json; sys.path.insert(0,"tests"); from test_app import payload; from main import questionnaire,submit_test,Submission,famous_people',
    'rich = payload("ENTJ")',
    'for answer in rich["answers"]: answer["reason"] = "Saat kegiatan ke-{}, aku mendengarkan sebelum ikut berdiskusi.".format(answer["id"])',
-   'print(json.dumps({"questions":questionnaire(),"payload":payload("ENTJ"),"result":submit_test(Submission(**payload("ENTJ"))),"neutral":submit_test(Submission(**payload())),"long_result":submit_test(Submission(**rich)),"people":famous_people()}))'
+   'personal = payload("ENTJ"); personal.update(user_name="Andi", user_age=17, user_gender="Laki-laki")',
+   'personal["answers"][0]["reason"] = "Aku suka berkumpul tapi aku jarang bicara"',
+   'print(json.dumps({"questions":questionnaire(),"payload":payload("ENTJ"),"result":submit_test(Submission(**payload("ENTJ"))),"neutral":submit_test(Submission(**payload())),"long_result":submit_test(Submission(**rich)),"personal_result":submit_test(Submission(**personal)),"people":famous_people()}))'
   ].join('\n')
 ],{cwd:root,encoding:'utf8'}));
 const tick=()=>new Promise(resolve=>setTimeout(resolve,15));
@@ -45,15 +47,24 @@ async function main(){
   assert.equal(w.document.querySelector('#review-content').hidden,false);
   assert.equal(w.document.querySelectorAll('.review-item').length,32);
   assert.equal(w.document.querySelector('#progress-count').textContent,'32 / 32');
+  assert.equal(w.document.querySelector('.profile-block').open,true);
+  w.document.querySelector('#user-name').value='Andi';
+  w.document.querySelector('#user-age').value='17.5';
+  w.document.querySelector('#user-gender').value='Laki-laki';
+  w.document.querySelector('#submit').click();await tick();assert.equal(submits.length,0);
+  w.document.querySelector('#user-age').value='17';
   w.document.querySelector('#submit').click();await tick();
   assert.equal(submits.length,1);assert.equal(submits[0].answers.length,32);assert.equal(submits[0].use_local_llm,false);
+  assert.equal(submits[0].user_name,'Andi');assert.equal(submits[0].user_age,17);assert.equal(submits[0].user_gender,'Laki-laki');
   assert.equal(JSON.parse(w.sessionStorage.getItem('mbti_result')).final_result,'ENTJ');assert.equal(logs.length,0);dom.window.close();
   console.log('PASS 32-item flow, keyboard neutral, reason retention, canonical submission');
   ({dom,w}=create('index.html',{draft:'{broken'}));run(w,'test.js');await tick();assert.equal(w.document.querySelector('#question-content').hidden,false);dom.window.close();
-  const saved={version:fixture.questions.version,answers:{1:{choice:'neutral',reason:'Kadang iya kadang tidak'}},current:1,profile:{name:'Dina',local_llm:false}};
+  const saved={version:fixture.questions.version,answers:{1:{choice:'neutral',reason:'Kadang iya kadang tidak'}},current:1,profile:{name:'Dina',age:'35',gender:'Nonbiner',local_llm:false}};
   ({dom,w}=create('index.html',{draft:JSON.stringify(saved)}));run(w,'test.js');await tick();
   w.document.querySelector('#previous').click();assert.equal(w.document.querySelector('input[value="neutral"]').checked,true);
-  w.document.querySelector('#reset').click();w.document.querySelector('#reset-dialog').close('reset');assert.equal(w.document.querySelector('#progress-count').textContent,'0 / 32');dom.window.close();
+  assert.equal(w.document.querySelector('#user-name').value,'Dina');assert.equal(w.document.querySelector('#user-age').value,'35');assert.equal(w.document.querySelector('#user-gender').value,'Nonbiner');
+  w.document.querySelector('#reset').click();w.document.querySelector('#reset-dialog').close('reset');assert.equal(w.document.querySelector('#progress-count').textContent,'0 / 32');
+  for(const id of ['user-name','user-age','user-gender'])assert.equal(w.document.getElementById(id).value,'');dom.window.close();
   console.log('PASS corrupt draft recovery, restored neutral, explicit reset');
   ({dom,w}=create('index.html',{blockStorage:true}));run(w,'test.js');await tick();assert.equal(w.document.querySelector('#storage-notice').hidden,false);dom.window.close();
   ({dom,w}=create('index.html',{networkError:true}));run(w,'test.js');await tick();assert.equal(w.document.querySelector('#load-error').hidden,false);dom.window.close();
@@ -87,6 +98,15 @@ async function main(){
   assert.equal(w.document.querySelector('#narrator-notice').hidden,false);
   assert.equal(w.document.querySelectorAll('.insight-card').length,32);assert.equal(logs.length,0);dom.window.close();
   console.log('PASS complete 32-reason narrative beyond 14 paragraphs, final conclusion, partial-model notice');
+  ({dom,w,logs}=create('result.html'));w.sessionStorage.setItem('mbti_result',JSON.stringify(fixture.personal_result));run(w,'result.js');await tick();
+  const introduction=w.document.querySelector('#ai-note p').textContent;
+  assert.ok(introduction.includes('Halo Andi,'));assert.ok(introduction.includes('laki-laki berusia 17 tahun'));
+  assert.ok(w.document.querySelector('#result-greeting').textContent.includes('Andi'));
+  w.document.querySelector('#share-result').click();await tick();
+  const shared=w.document.querySelector('#share-text').value;
+  assert.ok(!shared.includes('Andi'));assert.ok(!shared.includes('17'));assert.ok(!shared.includes('laki-laki'));
+  assert.equal(logs.length,0);dom.window.close();
+  console.log('PASS profile submission and restoration, personal introduction, profile excluded from share summary');
   ({dom,w}=create('result.html'));w.sessionStorage.setItem('mbti_result',JSON.stringify(fixture.neutral));run(w,'result.js');await tick();
   assert.equal(w.document.querySelector('#mbti-type').textContent,'Belum pasti');assert.equal(w.document.querySelectorAll('.cognitive-row').length,8);assert.equal(w.document.querySelector('#people-section').hidden,true);dom.window.close();
   ({dom,w}=create('result.html'));w.sessionStorage.setItem('mbti_result',JSON.stringify({schema_version:1,final_result:'ENTJ'}));run(w,'result.js');await tick();assert.equal(w.document.querySelector('#empty-result').hidden,false);dom.window.close();

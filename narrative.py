@@ -60,9 +60,27 @@ def question_insight(answer, prediction):
             "paragraphs": paragraphs, "evidence": [reason] if reason else []}
 
 
-def build_reflection(answers, predictions, functions, decision, name=""):
+def profile_opening(name, age, gender, reason_count):
+    """Use only the profile the user supplied; infer no demographic traits."""
+    greeting = f"Halo {name.strip()}," if name.strip() else "Halo,"
+    parts = [f"{greeting} aku asisten AI lokal yang akan menemanimu memahami hasil tes ini."]
+    if gender and age is not None:
+        parts.append(f"Kamu memperkenalkan diri sebagai {gender.lower()} berusia {age} tahun.")
+    elif age is not None:
+        parts.append(f"Kamu menyebut usiamu {age} tahun.")
+    elif gender:
+        parts.append(f"Kamu memperkenalkan diri sebagai {gender.lower()}.")
+    if reason_count:
+        parts.append(f"Terima kasih sudah membagikan alasan pada {reason_count} soal. Aku akan membacanya bersama pilihanmu untuk melihat pola yang muncul dan konteks di baliknya.")
+    else:
+        parts.append("Terima kasih sudah meluangkan waktu untuk mengisi tes ini. Mari kita mulai dari pola pilihan jawabanmu.")
+    return " ".join(parts)
+
+
+def build_reflection(answers, predictions, functions, decision, name="", age=None, gender=""):
     insights = [question_insight(a, predictions.get(a.id, {})) for a in sorted(answers, key=lambda a: a.id)]
-    opening = f"Halo {name.strip()}, terima kasih sudah bercerita." if name.strip() else "Terima kasih sudah meluangkan waktu untuk melihat kembali cara kamu berpikir."
+    meaningful = [i for i in insights if i["reason"]]
+    opening = profile_opening(name, age, gender, len(meaningful))
     paragraphs = [opening]
     if decision["type"]:
         stack = "–".join(decision["stack"])
@@ -71,7 +89,6 @@ def build_reflection(answers, predictions, functions, decision, name=""):
         paragraphs.append("Aku belum bisa memilih satu susunan fungsi yang cukup berbeda dari kandidat lainnya. Jawaban yang seimbang atau bergantung situasi tetap bermakna; kamu tidak perlu mengubahnya hanya agar memperoleh empat huruf.")
     if decision["status"] == "tentative":
         paragraphs.append("Pola ini belum cukup tegas. Perhatikan juga kandidat pembanding di bawah, terutama bagian alasan yang memberi pengecualian. Skor kecocokan bukan peluang bahwa tipemu pasti benar.")
-    meaningful = [i for i in insights if i["reason"]]
     # One discussion per written reason, in question order. Keep the locations so
     # the optional LLM can replace individual discussions without losing context.
     reason_paragraph_indices = {}

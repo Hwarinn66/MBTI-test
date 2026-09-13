@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Literal
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
@@ -124,6 +125,8 @@ class Submission(BaseModel):
     version: str
     answers: list[AnswerItem] = Field(min_length=len(QUESTIONS), max_length=len(QUESTIONS))
     user_name: str = Field(default="", max_length=60)
+    user_age: int | None = Field(default=None, strict=True, ge=13, le=100)
+    user_gender: Literal["", "Perempuan", "Laki-laki", "Nonbiner"] = ""
     use_local_llm: bool = Field(default=False, strict=True)
 
     @model_validator(mode="after")
@@ -141,7 +144,8 @@ def submit_test(data: Submission):
     functions, contributions = score_answers(data.answers, predictions)
     scoring = match_stacks({f: d["questionnaire_index"] for f, d in functions.items()})
     decision = match_stacks({f: d["index"] for f, d in functions.items()})
-    reflection = build_reflection(data.answers, predictions, functions, decision, data.user_name)
+    reflection = build_reflection(data.answers, predictions, functions, decision,
+                                  name=data.user_name, age=data.user_age, gender=data.user_gender)
     if data.use_local_llm:
         reflection = enhance_reflection(reflection, decision)
     warnings = ["Model dilatih pada data sintetis. Belum ada pengukuran akurasi pada responden nyata."]
@@ -150,6 +154,7 @@ def submit_test(data: Submission):
     return {
         "success": True, "schema_version": 2, "questionnaire_version": QUESTIONNAIRE_VERSION,
         "user_name": data.user_name.strip(), "final_result": decision["type"],
+        "user_age": data.user_age, "user_gender": data.user_gender,
         "questionnaire_result": scoring["type"], "is_adjusted": scoring["type"] != decision["type"],
         "decision": decision, "function_stack": decision["stack"],
         "functions": {f: {**FUNCTIONS[f], **value} for f, value in functions.items()},

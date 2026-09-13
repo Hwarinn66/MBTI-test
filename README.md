@@ -12,6 +12,7 @@ Web refleksi dengan 32 pertanyaan **fungsi kognitif**, klasifikasi alasan menggu
 - Model klasifikasi teks hasil training sudah disertakan dalam `models/cognitive_text.json.gz`. Tidak perlu training tiap pengguna selesai tes.
 - Ulasan lokal membahas pilihan, kutipan asli, nomor soal, nuansa, dan keterbatasan bukti. Dua orang dengan tipe sama dapat mendapat ulasan berbeda.
 - Panjang ulasan mengikuti jumlah soal yang diberi alasan: setiap alasan dibahas, termasuk alasan pada soal terakhir. Halaman hasil menampilkan seluruh ulasan.
+- Nama panggilan, usia, dan gender dapat diisi sebelum melihat hasil. Pengantar menyebut profil yang diisi dan melanjutkan pembahasan berdasarkan jawaban.
 - Mode generatif lokal tersedia untuk narasi lebih luwes, tetapi **memerlukan pemasangan model bahasa terpisah**. Jangan mengira mode standar adalah LLM.
 
 ## Menjalankan di VS Code / PowerShell
@@ -86,6 +87,16 @@ Qwen adalah model pralatih dari tim Qwen, **bukan model bahasa yang dilatih dari
    `/health` menampilkan `narrator: configured` bila file dan runtime terdeteksi; ini belum membuktikan model berhasil dimuat. Setelah tes, status `reflection.local_llm_status: available` menunjukkan narasi berhasil dibuat dan lolos pemeriksaan struktur/bukti.
 
 Model bahasa membutuhkan RAM lebih besar daripada ukuran file, dan dapat lambat pada CPU laptop. Sediakan ruang untuk model, cache konteks, dan aplikasi lain. Mulai dengan CPU (`0`); offload GPU memerlukan build CUDA yang cocok. Tidak ada klaim kecepatan atau penggunaan RAM yang telah diukur pada laptop pengguna.
+
+### Sapaan personal
+
+Setelah 32 soal selesai, bagian **Personalisasi penjelasan** langsung terbuka sebelum tombol **Lihat hasilku**. Nama panggilan (maksimal 60 karakter), usia (bilangan bulat 13–100 tahun), dan gender masing-masing opsional. Data yang dikosongkan tidak ditebak. Pilihan gender mencakup perempuan, laki-laki, nonbiner, atau tidak ingin menyebutkan.
+
+Contoh untuk nama Andi, usia 17, gender laki-laki, dan lima alasan tertulis:
+
+> Halo Andi, aku asisten AI lokal yang akan menemanimu memahami hasil tes ini. Kamu memperkenalkan diri sebagai laki-laki berusia 17 tahun. Terima kasih sudah membagikan alasan pada 5 soal. Aku akan membacanya bersama pilihanmu untuk melihat pola yang muncul dan konteks di baliknya.
+
+Profil digunakan untuk pengantar personal; skor fungsi dan kandidat tipe dihitung dari pilihan dan alasan. Pengamatan tentang pola pikir tetap merujuk isi jawaban, tanpa menyimpulkan kecerdasan atau kedewasaan dari usia/gender. Pengantar yang sama dipertahankan pada mode standar, Qwen, dan saat generasi Qwen hanya berhasil sebagian. Hasil menyertakan `user_name`, `user_age`, dan `user_gender`; pengantar disusun dari profil yang sudah divalidasi server.
 
 ### Panjang ulasan mengikuti jumlah alasan
 
@@ -195,7 +206,7 @@ Set variabel `PYTHON` jika executable Python yang dipakai pengujian UI berbeda. 
 
 - Jawaban tidak disimpan ke database server atau dipakai training otomatis. Browser menyimpan draft/hasil di `sessionStorage` tab aktif. Jangan menulis informasi pribadi sensitif.
 - Tidak ada permintaan jaringan dari jalur inferensi lokal. Unduhan dependensi/model saat setup adalah aktivitas terpisah.
-- Nama panggilan hanya untuk sapaan; usia/gender tidak dipakai untuk penilaian.
+- Profil opsional dipakai untuk sapaan dan disimpan bersama draft/hasil di tab aktif. Profil tidak memengaruhi skor, tidak dikirim ke model generatif, dan tidak ikut dalam ringkasan tombol bagikan hasil.
 - Teks pengguna/model ditampilkan sebagai teks, bukan HTML. File `.env`, sumber, dataset, dan model tidak disajikan sebagai aset web.
 - Token fungsi seperti Si/Ti dan interpretasinya adalah konstruksi tipologi. Kalimat “suka berkumpul tetapi jarang bicara” tidak otomatis diartikan sebagai Si. Ketidakjelasan dan penolakan diperlakukan hati-hati.
 - Bahasa generatif yang terdengar meyakinkan tidak membuktikan ketepatan klasifikasi. Jangan gunakan hasil untuk diagnosis, seleksi kerja, atau keputusan berisiko tinggi.

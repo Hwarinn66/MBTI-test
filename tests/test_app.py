@@ -175,6 +175,51 @@ class AppTests(unittest.TestCase):
         self.assertNotEqual(first["reflection"]["paragraphs"], second["reflection"]["paragraphs"])
         self.assertIn("Aku suka berkumpul", " ".join(first["reflection"]["paragraphs"]))
 
+    def test_profile_personalizes_intro_without_changing_answer_assessment(self):
+        p = payload("ENTP")
+        p["answers"][0]["reason"] = "Aku suka berkumpul tapi aku jarang bicara"
+        original = self.client.post("/submit", json=p).json()
+        for age, gender in ((17, "Laki-laki"), (35, "Perempuan"), (100, "Nonbiner")):
+            with self.subTest(age=age, gender=gender):
+                response = self.client.post("/submit", json={**p, "user_name": "  Andi  ", "user_age": age, "user_gender": gender})
+                self.assertEqual(response.status_code, 200)
+                result = response.json()
+                self.assertEqual(result["user_name"], "Andi")
+                self.assertEqual(result["user_age"], age)
+                self.assertEqual(result["user_gender"], gender)
+                introduction = result["reflection"]["paragraphs"][0]
+                self.assertIn("Halo Andi,", introduction)
+                self.assertIn(f"{gender.lower()} berusia {age} tahun", introduction)
+                self.assertIn("alasan pada 1 soal", introduction)
+                for key in ("functions", "decision", "final_result", "function_stack", "answer_contributions"):
+                    self.assertEqual(result[key], original[key], key)
+                self.assertEqual(result["reflection"]["paragraphs"][1:], original["reflection"]["paragraphs"][1:])
+
+    def test_optional_profile_mentions_only_supplied_fields(self):
+        for profile in ({}, {"user_name": "Andi"}, {"user_age": 13}, {"user_gender": "Nonbiner"},
+                        {"user_name": "  ", "user_age": None, "user_gender": ""}):
+            with self.subTest(profile=profile):
+                response = self.client.post("/submit", json={**payload(), **profile})
+                self.assertEqual(response.status_code, 200)
+                result = response.json()
+                opening = result["reflection"]["paragraphs"][0]
+                self.assertEqual(result["user_age"], profile.get("user_age"))
+                self.assertEqual(result["user_gender"], profile.get("user_gender", ""))
+                self.assertEqual("Andi" in opening, profile.get("user_name") == "Andi")
+                self.assertEqual("tahun" in opening, profile.get("user_age") is not None)
+                self.assertEqual("nonbiner" in opening, profile.get("user_gender") == "Nonbiner")
+                self.assertNotIn("perempuan", opening)
+                self.assertNotIn("laki-laki", opening)
+                self.assertNotIn("membagikan alasan", opening)
+
+    def test_profile_validation_rejects_invalid_values(self):
+        invalid = ([{"user_age": age} for age in (12, 101, True, 17.5, "17")]
+                   + [{"user_gender": value} for value in (None, 1, "<script>test</script>")]
+                   + [{"user_name": "a" * 61}])
+        for profile in invalid:
+            with self.subTest(profile=profile):
+                self.assertEqual(self.client.post("/submit", json={**payload(), **profile}).status_code, 422)
+
     def test_main_reflection_grows_and_discusses_every_written_reason(self):
         previous_length = 0
         # Include a late question even in the shortest nonempty submission.
@@ -309,12 +354,12 @@ class NarrationTests(unittest.TestCase):
         self.decision = {"type": "ENTP"}
         self.good = {"paragraphs": [{"question_ids": [1], "text": "Pada soal 1, kamu menulis “Aku suka berkumpul tapi aku jarang bicara”. Menarik untuk membedakan kebersamaan dengan keaktifan berbicara."}]}
 
-    def reflection(self, count):
+    def reflection(self, count, **profile):
         answers = [AnswerItem(**a) for a in payload("ENTP")["answers"]]
         for answer in answers[:count]:
             answer.reason = self.selected[0]["reason"]
         decision = {**self.decision, "stack": FUNCTION_STACKS["ENTP"], "status": "tentative"}
-        return build_reflection(answers, {}, {}, decision)
+        return build_reflection(answers, {}, {}, decision, **profile)
 
     @staticmethod
     def batch_response(**kwargs):
@@ -347,7 +392,7 @@ class NarrationTests(unittest.TestCase):
                 validate_paragraphs({"paragraphs": [{"question_ids": [1], "text": text}]}, self.selected, self.decision)
 
     def test_generative_adapter_with_fake_model_and_failure(self):
-        reflection = self.reflection(1)
+        reflection = self.reflection(1, name="Andi", age=17, gender="Laki-laki")
         fake_module = types.ModuleType("llama_cpp"); fake_module.StoppingCriteriaList = list
         model = Mock()
         model.create_chat_completion.return_value = {"choices": [{"message": {"content": json.dumps(self.good)}}]}
@@ -355,9 +400,15 @@ class NarrationTests(unittest.TestCase):
             good = enhance_reflection(reflection, self.decision)
             self.assertEqual(good["mode"], "local_llm")
             self.assertEqual(good["question_insights"], reflection["question_insights"])
+            self.assertEqual(good["paragraphs"][0], reflection["paragraphs"][0])
+            self.assertIn("laki-laki berusia 17 tahun", good["paragraphs"][0])
+            sent = json.loads(model.create_chat_completion.call_args.kwargs["messages"][1]["content"])
+            self.assertEqual(set(sent), {"type", "evidence"})
+            self.assertNotIn("Andi", json.dumps(sent))
             model.create_chat_completion.side_effect = RuntimeError("private model detail")
             bad = enhance_reflection(reflection, self.decision)
             self.assertEqual(bad["local_llm_status"], "fallback")
+            self.assertEqual(bad["paragraphs"][0], reflection["paragraphs"][0])
             self.assertNotIn("private model detail", json.dumps(bad))
 
     def test_all_reasons_generated_in_small_batches_without_losing_summary(self):
@@ -387,7 +438,7 @@ class NarrationTests(unittest.TestCase):
                 self.assertEqual(sent, list(indices))
 
     def test_failed_middle_batch_keeps_its_discussions_and_continues(self):
-        reflection = self.reflection(5)
+        reflection = self.reflection(5, name="Andi", age=17, gender="Laki-laki")
         fake_module = types.ModuleType("llama_cpp"); fake_module.StoppingCriteriaList = list
         def respond(**kwargs):
             batch = json.loads(kwargs["messages"][1]["content"])["evidence"]
@@ -401,6 +452,7 @@ class NarrationTests(unittest.TestCase):
         self.assertEqual(result["mode"], "local_llm_mixed")
         self.assertEqual(result["local_llm_status"], "partial")
         self.assertEqual(result["generated_reason_count"], 3)
+        self.assertEqual(result["paragraphs"][0], reflection["paragraphs"][0])
         for question_id, index in reflection["reason_paragraph_indices"].items():
             if question_id in (3, 4):
                 self.assertEqual(result["paragraphs"][index], reflection["paragraphs"][index])
