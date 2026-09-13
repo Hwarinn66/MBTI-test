@@ -47,9 +47,6 @@ def question_insight(answer, prediction):
             if pf != f:
                 paragraphs.append(f"Soal ini terutama memeriksa {f}, sedangkan alasanmu diklasifikasikan paling dekat dengan {pf}. Karena itu alasanmu menambah konteks fungsi yang berbeda dari fungsi utama soal.")
         else:
-            # This path is only a defensive fallback when the text model itself
-            # cannot be loaded or returns an invalid class. Normal runtime now
-            # assigns a best-match function to every non-empty reason.
             relationship = "unclear"
             paragraphs.append(f"Alasan ini belum dapat diklasifikasikan oleh model teks, sehingga pembahasan sementara mengikuti fungsi utama soal, yaitu {f}.")
 
@@ -83,31 +80,41 @@ def profile_opening(name, age, gender, reason_count):
 
 
 def _overall_conclusion(meaningful, functions, decision):
-    ranked = sorted(FUNCTIONS, key=lambda f: (-functions[f]["index"], f))
-    first, second = ranked[:2]
     counts = Counter(i["text_function"] for i in meaningful if i["text_function"] in FUNCTIONS)
     reason_ranked = [f for f, _ in counts.most_common()]
+
+    if functions and all(f in functions and isinstance(functions[f], dict) and "index" in functions[f] for f in FUNCTIONS):
+        ranked = sorted(FUNCTIONS, key=lambda f: (-functions[f]["index"], f))
+    elif reason_ranked:
+        ranked = reason_ranked + [f for f in FUNCTIONS if f not in reason_ranked]
+    else:
+        ranked = list(FUNCTIONS)
+    first, second = ranked[:2]
 
     parts = [
         "Kesimpulan utama:",
         f"secara keseluruhan, pola terkuatmu berada pada {first} ({FUNCTIONS[first]['title']}) dan {second} ({FUNCTIONS[second]['title']}).",
         f"Ini menggambarkan kecenderungan untuk {FUNCTIONS[first]['meaning']}, sambil juga {FUNCTIONS[second]['meaning']}.",
     ]
-    if reason_ranked:
-        top_reason = reason_ranked[0]
+
+    top_reason = reason_ranked[0] if reason_ranked else None
+    if top_reason:
         parts.append(
             f"Dari alasan yang kamu tulis, fungsi yang paling sering muncul adalah {top_reason} ({FUNCTIONS[top_reason]['name']}), sehingga cara kamu menjelaskan keputusan paling sering bergerak di sekitar pola {FUNCTIONS[top_reason]['meaning']}."
         )
         if len(reason_ranked) > 1:
             second_reason = reason_ranked[1]
-            parts.append(
-                f"Pola pendamping yang juga terlihat adalah {second_reason}, yaitu {FUNCTIONS[second_reason]['meaning']}."
-            )
+            parts.append(f"Pola pendamping yang juga terlihat adalah {second_reason}, yaitu {FUNCTIONS[second_reason]['meaning']}.")
+
     if decision.get("type"):
-        parts.append(
-            f"Dalam kerangka MBTI berbasis fungsi yang dipakai tes ini, susunan keseluruhanmu paling dekat dengan {decision['type']} ({'–'.join(decision['stack'])})."
-        )
-    parts.append("Jadi, gambaran utamanya adalah cara berpikirmu memiliki pola yang cukup konsisten antara fungsi yang dominan pada jawaban dan cara kamu memberi alasan.")
+        parts.append(f"Dalam kerangka MBTI berbasis fungsi yang dipakai tes ini, susunan keseluruhanmu paling dekat dengan {decision['type']} ({'–'.join(decision.get('stack', []))}).")
+
+    if top_reason and top_reason in {first, second}:
+        parts.append("Pilihan jawaban dan cara kamu menjelaskan alasan saling menguatkan pada pola utama yang sama, sehingga gambaran keseluruhannya terlihat cukup konsisten.")
+    elif top_reason:
+        parts.append(f"Pilihan jawaban menonjolkan {first} dan {second}, sedangkan alasan tertulismu lebih sering menonjolkan {top_reason}. Ini menunjukkan bahwa pilihan akhir dan cara kamu menjelaskan keputusan memperlihatkan sisi kepribadian yang berbeda namun tetap dapat berjalan bersamaan.")
+    else:
+        parts.append("Karena tidak ada alasan tertulis, gambaran keseluruhan terutama berasal dari pola pilihan jawaban dan susunan fungsi yang dihasilkan tes.")
     return " ".join(parts)
 
 
@@ -121,10 +128,14 @@ def build_reflection(answers, predictions, functions, decision, name="", age=Non
         stack = "–".join(decision["stack"])
         paragraphs.append(f"Dari pola delapan fungsi pada tes ini, kandidat utamamu adalah {decision['type']} dengan susunan {stack}. Tipe ini diperoleh setelah skor seluruh fungsi dihitung, bukan dari penjumlahan pasangan huruf.")
     else:
-        top_candidate = decision["candidates"][0]
-        paragraphs.append(f"Pola fungsi terdekatmu saat ini adalah {top_candidate['type']} dengan susunan {'–'.join(top_candidate['stack'])}. Sistem tetap menampilkan kandidat terdekat berdasarkan skor delapan fungsi meskipun profil keseluruhannya sangat berimbang.")
+        candidates = decision.get("candidates") or []
+        if candidates:
+            top_candidate = candidates[0]
+            paragraphs.append(f"Pola fungsi terdekatmu saat ini adalah {top_candidate['type']} dengan susunan {'–'.join(top_candidate['stack'])}. Sistem tetap menampilkan kandidat terdekat berdasarkan skor delapan fungsi meskipun profil keseluruhannya sangat berimbang.")
+        else:
+            paragraphs.append("Pola fungsi utama dibaca langsung dari delapan skor fungsi kognitif yang tersedia.")
 
-    if decision["status"] == "tentative" and decision["type"]:
+    if decision.get("status") == "tentative" and decision.get("type"):
         paragraphs.append(f"Kandidat utama tetap {decision['type']}; kandidat lain berada cukup dekat pada skor kecocokan, tetapi hasil yang digunakan sebagai acuan utama tetap tipe tersebut.")
 
     reason_paragraph_indices = {}
@@ -147,8 +158,6 @@ def build_reflection(answers, predictions, functions, decision, name="", age=Non
     if neutral_count:
         paragraphs.append(f"Ada {neutral_count} pilihan netral. Pilihan tersebut tetap menyimpan dua sisi kontribusi, sementara alasan tertulis tetap diklasifikasikan ke fungsi kognitif yang paling dekat.")
 
-    # Keep the methodology note before the final summary so the user's requested
-    # overall conclusion is literally the last explanatory paragraph.
     paragraphs.append("Model teks ini belajar dari contoh sintetis dan belum divalidasi pada responden nyata. Karena setiap alasan nonkosong dipaksa ke fungsi best-match, alasan yang sangat pendek atau kurang relevan dapat menghasilkan klasifikasi yang kurang tepat. Semakin jelas dan konkret alasan yang ditulis, semakin berguna interpretasinya.")
     overall_conclusion_index = len(paragraphs)
     paragraphs.append(_overall_conclusion(meaningful, functions, decision))
