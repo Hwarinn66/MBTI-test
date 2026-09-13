@@ -17,8 +17,6 @@ BASE = Path(__file__).resolve().parent
 LOCK = threading.Lock()
 _model = None
 logger = logging.getLogger(__name__)
-# Small batches fit the existing 4096-token context. A shared time budget keeps
-# many written reasons from multiplying the maximum wait for a result.
 BATCH_SIZE = 2
 BATCH_SECONDS = 75
 TOTAL_SECONDS = 150
@@ -45,8 +43,6 @@ def _load_model():
     global _model
     if _model is None:
         from llama_cpp import Llama
-        # Do not force ChatML here. Qwen3 GGUF files contain their own chat
-        # template. /no_think is kept in the instruction for older runtimes.
         _model = Llama(model_path=str(model_path()), n_ctx=4096,
                        n_threads=max(1, int(os.getenv("LOCAL_LLM_THREADS", "4"))),
                        n_gpu_layers=int(os.getenv("LOCAL_LLM_GPU_LAYERS", "0")),
@@ -70,13 +66,7 @@ def _extract_json_payload(content):
 
 
 def _supported_chat_kwargs(model, kwargs):
-    """Keep only arguments supported by the installed llama-cpp-python.
-
-    llama-cpp-python releases differ in create_chat_completion parameters.
-    In particular, some versions do not expose stopping_criteria or
-    chat_template_kwargs at this level. Passing either then raises TypeError
-    before generation starts.
-    """
+    """Keep only arguments supported by the installed llama-cpp-python."""
     try:
         signature = inspect.signature(model.create_chat_completion)
         params = signature.parameters
@@ -91,7 +81,7 @@ def _chat_completion(model, **kwargs):
     return model.create_chat_completion(**_supported_chat_kwargs(model, kwargs))
 
 
-def _validate_row(row, by_id, decision):
+def _validate_row(row, by_id, decision, require_text_reference=True):
     """Validate one generated paragraph without trusting model-provided evidence."""
     if not isinstance(row, dict):
         raise ValueError("Invalid row")
@@ -104,11 +94,17 @@ def _validate_row(row, by_id, decision):
     text = text.strip()
     if re.search(r"<|>|https?://|\bpasti\b|diagnosis|gangguan|terbukti secara ilmiah", text, re.I):
         raise ValueError("Unsupported claim")
+
+    # question_ids already binds this paragraph to one known evidence item. The
+    # strict public validator still requires the visible number for regression
+    # tests; runtime validation does not discard a good paragraph merely because
+    # a small model omitted the literal phrase "soal N".
     references = re.findall(r"(?:soal|pertanyaan)\s*(?:nomor\s*)?(\d+)", text, re.I)
-    if str(question_id) not in references:
+    if require_text_reference and str(question_id) not in references:
         raise ValueError("Missing evidence reference")
     if any(int(number) != question_id for number in references):
         raise ValueError("Incorrect evidence reference")
+
     for quote in re.findall(r'“([^”]+)”|"([^"\n]+)"', text):
         value = quote[0] or quote[1]
         if value not in by_id[question_id]["reason"]:
@@ -133,7 +129,7 @@ def validate_paragraphs(payload, selected, decision):
     by_id = {i["question_id"]: i for i in selected}
     texts = {}
     for row in rows:
-        question_id, text = _validate_row(row, by_id, decision)
+        question_id, text = _validate_row(row, by_id, decision, require_text_reference=True)
         if question_id in texts:
             raise ValueError("Repeated question")
         texts[question_id] = text
@@ -143,22 +139,28 @@ def validate_paragraphs(payload, selected, decision):
 
 
 def valid_paragraphs(payload, selected, decision):
-    """Keep valid rows even when a small local model damages a sibling row."""
-    if not isinstance(payload, dict) or not isinstance(payload.get("paragraphs"), list):
-        return {}, len(selected)
+    """Keep safe valid rows and report exactly why sibling rows were rejected."""
     by_id = {i["question_id"]: i for i in selected}
+    if not isinstance(payload, dict):
+        return {}, len(selected), ["payload:not_object"]
+    rows = payload.get("paragraphs")
+    if not isinstance(rows, list):
+        return {}, len(selected), ["paragraphs:not_list"]
+
     texts = {}
-    rejected = 0
-    for row in payload["paragraphs"]:
+    reasons = []
+    for index, row in enumerate(rows):
         try:
-            question_id, text = _validate_row(row, by_id, decision)
+            question_id, text = _validate_row(row, by_id, decision, require_text_reference=False)
             if question_id in texts:
                 raise ValueError("Repeated question")
             texts[question_id] = text
-        except (ValueError, TypeError, KeyError):
-            rejected += 1
-    rejected += len(set(by_id) - set(texts))
-    return texts, rejected
+        except (ValueError, TypeError, KeyError) as exc:
+            reasons.append(f"row{index + 1}:{exc}")
+
+    missing = set(by_id) - set(texts)
+    reasons.extend(f"missing:{question_id}" for question_id in sorted(missing))
+    return texts, len(reasons), reasons
 
 
 def enhance_reflection(reflection, decision):
@@ -170,9 +172,11 @@ def enhance_reflection(reflection, decision):
         return {**reflection, "local_llm_status": "no_reasons"}
     if not LOCK.acquire(blocking=False):
         return {**reflection, "local_llm_status": "busy"}
+
     generated = {}
     rejected_count = 0
     last_error = None
+    rejection_reasons = []
     try:
         started = time.monotonic()
         model = _load_model()
@@ -185,8 +189,8 @@ def enhance_reflection(reflection, decision):
             "Jika fungsi belum dikenali, jangan menyebut kode fungsi seperti Te/Ti/Fe/Fi/Ne/Ni/Se/Si; cukup katakan bukti belum cukup. "
             "Beri nuansa pada pengecualian dan ajukan pertanyaan refleksi yang relevan. "
             "Buat tepat satu paragraf 50-100 kata untuk SETIAP alasan yang tersedia. "
-            "Setiap paragraf hanya merujuk satu nomor soal; jangan melewatkan atau mengulang alasan. "
-            "Sebut nomor soal. Sebaiknya jangan mengutip; jika mengutip, salin persis dengan tanda “...”. "
+            "Setiap paragraf hanya membahas satu item evidence dan gunakan question_ids dari item itu. "
+            "Tidak wajib menulis nomor soal di kalimat. Jangan mengutip kecuali benar-benar perlu; jika mengutip, salin persis. "
             "Keluarkan JSON paragraphs berisi question_ids dan text. Tanpa markdown dan tanpa penjelasan lain. /no_think"
         )
         deadline = started + TOTAL_SECONDS
@@ -200,8 +204,6 @@ def enhance_reflection(reflection, decision):
                       "items": {"type": "object", "properties": {"question_ids": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "integer"}}, "text": {"type": "string"}}, "required": ["question_ids", "text"]}}}, "required": ["paragraphs"]}
             evidence = [{k: i[k] for k in ("question_id", "question", "choice_label", "reason", "relationship", "text_function", "text_stance", "text_recognized")} for i in batch]
             try:
-                # Keep the call compatible with older llama-cpp-python. Unsupported
-                # arguments are filtered before calling create_chat_completion.
                 response = _chat_completion(
                     model,
                     messages=[{"role": "system", "content": instruction},
@@ -211,11 +213,13 @@ def enhance_reflection(reflection, decision):
                 )
                 content = response["choices"][0]["message"].get("content")
                 payload = _extract_json_payload(content)
-                accepted, rejected = valid_paragraphs(payload, batch, decision)
+                accepted, rejected, reasons = valid_paragraphs(payload, batch, decision)
                 generated.update(accepted)
                 rejected_count += rejected
-                if rejected:
+                if reasons:
+                    rejection_reasons.extend(reasons)
                     last_error = "validation_rejected"
+                    logger.warning("Local narration validation rejected: %s", "; ".join(reasons))
             except Exception as exc:
                 rejected_count += len(batch)
                 last_error = f"{type(exc).__name__}: {exc}"
@@ -226,9 +230,12 @@ def enhance_reflection(reflection, decision):
         logger.warning("Local narration unavailable: %s", last_error)
     finally:
         LOCK.release()
+
     if not generated:
         return {**reflection, "local_llm_status": "fallback", "local_llm_rejected_count": rejected_count,
-                "local_llm_last_error": last_error}
+                "local_llm_last_error": last_error,
+                "local_llm_rejection_reasons": rejection_reasons[:20]}
+
     paragraphs = list(reflection["paragraphs"])
     for question_id, text in generated.items():
         paragraphs[reflection["reason_paragraph_indices"][question_id]] = text
@@ -237,5 +244,6 @@ def enhance_reflection(reflection, decision):
             "generated_reason_count": len(generated),
             "local_llm_rejected_count": rejected_count,
             "local_llm_last_error": last_error,
+            "local_llm_rejection_reasons": rejection_reasons[:20],
             "mode": "local_llm" if complete else "local_llm_mixed",
             "local_llm_status": "available" if complete else "partial"}
