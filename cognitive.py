@@ -59,8 +59,12 @@ def score_answers(answers, text_predictions=None):
         pred = (text_predictions or {}).get(answer.id, {})
         normalized = " ".join(answer.reason.casefold().split())
         if pred.get("accepted") and normalized and normalized not in seen_text:
+            f, stance = pred.get("function"), pred.get("stance")
+            # Only the eight supported cognitive functions may influence scoring.
+            # Unknown/malformed classifier labels are treated as abstentions.
+            if f not in totals or stance not in {"support", "oppose", "mixed"}:
+                continue
             seen_text.add(normalized)
-            f, stance = pred["function"], pred["stance"]
             weight = TEXT_WEIGHT * pred["model_score"]
             if stance in ("support", "mixed"):
                 totals[f]["text_support"] += weight
