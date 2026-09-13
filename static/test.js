@@ -165,7 +165,7 @@ async function submit() {
   const payload={version,answers:questions.map(q=>({id:q.id,choice:answers[q.id].choice,reason:answers[q.id].reason||''})),user_name:$('user-name').value.trim(),user_age:age.value?Number(age.value):null,user_gender:$('user-gender').value,use_local_llm:$('use-local-llm').checked};
   setBusy(true);
   try {
-    const response=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout($('use-local-llm').checked?180000:30000)});
+    const response=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout($('use-local-llm').checked?900000:30000)});
     if(!response.ok){
       if(response.status===422)throw Error('validation');
       throw Error('server');
@@ -178,7 +178,7 @@ async function submit() {
     await inlineResult(result);
   } catch(error) {
     if(!$('submit-error'))return;
-    $('submit-error').textContent=error.name==='TimeoutError'?'Proses lebih lama dari biasanya. Jawabanmu masih tersimpan di halaman ini. Coba lagi dengan narasi generatif lokal dinonaktifkan.':error.message==='validation'?'Ada jawaban atau profil yang belum valid. Pastikan usia 13–100 dan semua pertanyaan sudah dijawab.':'Hasil belum bisa diproses. Periksa koneksi, lalu coba lagi. Jawabanmu tetap ada di halaman ini.';
+    $('submit-error').textContent=error.name==='TimeoutError'?'Proses narasi lokal melewati 15 menit. Jawabanmu masih tersimpan di halaman ini. Kamu bisa mencoba lagi atau menonaktifkan narasi generatif lokal.':error.message==='validation'?'Ada jawaban atau profil yang belum valid. Pastikan usia 13–100 dan semua pertanyaan sudah dijawab.':'Hasil belum bisa diproses. Periksa koneksi, lalu coba lagi. Jawabanmu tetap ada di halaman ini.';
     $('submit-error').hidden=false;setBusy(false);
   }
 }
