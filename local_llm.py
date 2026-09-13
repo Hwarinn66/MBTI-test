@@ -4,6 +4,7 @@ No HTTP client, external API, background download, or Gemini integration.
 Model text can never alter scores or type. Concurrency is bounded to one run.
 """
 import importlib.util
+import inspect
 import json
 import logging
 import os
@@ -19,8 +20,8 @@ logger = logging.getLogger(__name__)
 # Small batches fit the existing 4096-token context. A shared time budget keeps
 # many written reasons from multiplying the maximum wait for a result.
 BATCH_SIZE = 2
-BATCH_SECONDS = 60
-TOTAL_SECONDS = 120
+BATCH_SECONDS = 75
+TOTAL_SECONDS = 150
 
 
 def model_path():
@@ -44,11 +45,44 @@ def _load_model():
     global _model
     if _model is None:
         from llama_cpp import Llama
-        _model = Llama(model_path=str(model_path()), n_ctx=4096, chat_format="chatml",
+        # Do not force ChatML here. Qwen3 GGUF files contain their own chat
+        # template, and using that template is important for /no_think support.
+        _model = Llama(model_path=str(model_path()), n_ctx=4096,
                        n_threads=max(1, int(os.getenv("LOCAL_LLM_THREADS", "4"))),
                        n_gpu_layers=int(os.getenv("LOCAL_LLM_GPU_LAYERS", "0")),
                        verbose=False, seed=20260912)
     return _model
+
+
+def _extract_json_payload(content):
+    """Remove optional Qwen thinking wrappers and recover the JSON object.
+
+    The structured-output grammar should already produce JSON. This is only a
+    compatibility layer for local models/templates that still prepend a
+    <think> block or markdown fence.
+    """
+    if not isinstance(content, str):
+        raise ValueError("Missing narration content")
+    cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.I | re.S).strip()
+    cleaned = re.sub(r"^```(?:json)?\s*|\s*```$", "", cleaned, flags=re.I | re.S).strip()
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        start, end = cleaned.find("{"), cleaned.rfind("}")
+        if start < 0 or end <= start:
+            raise
+        return json.loads(cleaned[start:end + 1])
+
+
+def _chat_completion(model, **kwargs):
+    """Disable Qwen3 thinking when the installed llama-cpp-python exposes it."""
+    try:
+        params = inspect.signature(model.create_chat_completion).parameters
+    except (TypeError, ValueError):
+        params = {}
+    if "chat_template_kwargs" in params:
+        kwargs["chat_template_kwargs"] = {"enable_thinking": False}
+    return model.create_chat_completion(**kwargs)
 
 
 def _validate_row(row, by_id, decision):
@@ -103,11 +137,7 @@ def validate_paragraphs(payload, selected, decision):
 
 
 def valid_paragraphs(payload, selected, decision):
-    """Keep valid rows even when a small local model damages a sibling row.
-
-    Safety/evidence rules are identical to the strict validator. Invalid,
-    duplicated or missing rows simply fall back to the deterministic narrative.
-    """
+    """Keep valid rows even when a small local model damages a sibling row."""
     if not isinstance(payload, dict) or not isinstance(payload.get("paragraphs"), list):
         return {}, len(selected)
     by_id = {i["question_id"]: i for i in selected}
@@ -136,6 +166,7 @@ def enhance_reflection(reflection, decision):
         return {**reflection, "local_llm_status": "busy"}
     generated = {}
     rejected_count = 0
+    last_error = None
     try:
         from llama_cpp import StoppingCriteriaList
         started = time.monotonic()
@@ -148,15 +179,16 @@ def enhance_reflection(reflection, decision):
             "Dasarkan pengamatan pada isi alasan; jangan menilai kecerdasan, kedewasaan, atau tipe berdasarkan usia atau gender. "
             "Jika fungsi belum dikenali, jangan menyebut kode fungsi seperti Te/Ti/Fe/Fi/Ne/Ni/Se/Si; cukup katakan bukti belum cukup. "
             "Beri nuansa pada pengecualian dan ajukan pertanyaan refleksi yang relevan. "
-            "Buat tepat satu paragraf 60-120 kata untuk SETIAP alasan yang tersedia. "
+            "Buat tepat satu paragraf 50-100 kata untuk SETIAP alasan yang tersedia. "
             "Setiap paragraf hanya merujuk satu nomor soal; jangan melewatkan atau mengulang alasan. "
             "Sebut nomor soal. Sebaiknya jangan mengutip; jika mengutip, salin persis dengan tanda “...”. "
-            "Keluarkan JSON paragraphs berisi question_ids dan text. Tanpa HTML. /no_think"
+            "Keluarkan JSON paragraphs berisi question_ids dan text. Tanpa markdown dan tanpa penjelasan lain. /no_think"
         )
         deadline = started + TOTAL_SECONDS
         for offset in range(0, len(selected), BATCH_SIZE):
             if time.monotonic() >= deadline:
                 rejected_count += len(selected[offset:])
+                last_error = "total_timeout"
                 break
             batch = selected[offset:offset + BATCH_SIZE]
             batch_deadline = min(deadline, time.monotonic() + BATCH_SECONDS)
@@ -164,35 +196,41 @@ def enhance_reflection(reflection, decision):
                       "items": {"type": "object", "properties": {"question_ids": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "integer"}}, "text": {"type": "string"}}, "required": ["question_ids", "text"]}}}, "required": ["paragraphs"]}
             evidence = [{k: i[k] for k in ("question_id", "question", "choice_label", "reason", "relationship", "text_function", "text_stance", "text_recognized")} for i in batch]
             try:
-                response = model.create_chat_completion(
+                response = _chat_completion(
+                    model,
                     messages=[{"role": "system", "content": instruction},
                               {"role": "user", "content": json.dumps({"type": decision["type"], "evidence": evidence}, ensure_ascii=False)}],
                     response_format={"type": "json_object", "schema": schema},
-                    max_tokens=600 * len(batch), temperature=0.25,
+                    max_tokens=350 * len(batch), temperature=0.20,
                     stopping_criteria=StoppingCriteriaList([lambda *_, until=batch_deadline: time.monotonic() >= until]),
                 )
-                content = response["choices"][0]["message"]["content"]
-                accepted, rejected = valid_paragraphs(json.loads(content), batch, decision)
+                content = response["choices"][0]["message"].get("content")
+                payload = _extract_json_payload(content)
+                accepted, rejected = valid_paragraphs(payload, batch, decision)
                 generated.update(accepted)
                 rejected_count += rejected
+                if rejected:
+                    last_error = "validation_rejected"
             except Exception as exc:
                 rejected_count += len(batch)
+                last_error = type(exc).__name__
                 logger.warning("Local narration batch unavailable (%s); keeping evidence-based discussions", type(exc).__name__)
     except Exception as exc:
         rejected_count = len(selected)
+        last_error = type(exc).__name__
         logger.warning("Local narration unavailable (%s); using evidence-based reflection", type(exc).__name__)
     finally:
         LOCK.release()
     if not generated:
-        return {**reflection, "local_llm_status": "fallback", "local_llm_rejected_count": rejected_count}
+        return {**reflection, "local_llm_status": "fallback", "local_llm_rejected_count": rejected_count,
+                "local_llm_last_error": last_error}
     paragraphs = list(reflection["paragraphs"])
     for question_id, text in generated.items():
         paragraphs[reflection["reason_paragraph_indices"][question_id]] = text
     complete = len(generated) == len(selected)
-    # Retain every other discussion, the tentative conclusion, cross-question
-    # patterns and limitations, including when only some batches succeeded.
     return {**reflection, "paragraphs": paragraphs,
             "generated_reason_count": len(generated),
             "local_llm_rejected_count": rejected_count,
+            "local_llm_last_error": last_error,
             "mode": "local_llm" if complete else "local_llm_mixed",
             "local_llm_status": "available" if complete else "partial"}
