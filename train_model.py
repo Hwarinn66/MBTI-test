@@ -11,22 +11,41 @@ import json
 from pathlib import Path
 
 import numpy as np
+import sklearn
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 
-from generate_dataset import validate_rows
+from dataset_utils import validate_rows
 from ml_local import LocalClassifier, features
 
 BASE = Path(__file__).resolve().parent
+
+
+def evaluate_portable(model, rows):
+    """Compare models on exactly the same held-out sentences and runtime guards."""
+    truth = np.array([r["label"] for r in rows])
+    predicted = np.array([max(model.probabilities(r["text"]).items(), key=lambda p: p[1])[0] for r in rows])
+    runtime = [model.predict(r["text"]) for r in rows]
+    accepted = np.array([p["accepted"] for p in runtime])
+    labels = np.array([f"{p['function']}:{p['stance']}" if p["accepted"] else "abstain" for p in runtime])
+    return {"rows": len(rows), "accuracy": float(accuracy_score(truth, predicted)),
+            "macro_f1": float(f1_score(truth, predicted, average="macro", zero_division=0)),
+            "runtime_accepted_coverage": float(accepted.mean()),
+            "runtime_accepted_accuracy": float((labels[accepted] == truth[accepted]).mean()) if accepted.any() else None}
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", type=Path, default=BASE / "data" / "cognitive_reasons.csv")
     parser.add_argument("--output-dir", type=Path, default=BASE / "models")
+    parser.add_argument("--baseline-model", type=Path, help="Optional previous model, read before output replacement")
     args = parser.parse_args()
-    with args.dataset.open(encoding="utf-8", newline="") as handle:
+    baseline = None
+    if args.baseline_model:
+        with gzip.open(args.baseline_model, "rt", encoding="utf-8") as handle:
+            baseline = LocalClassifier(json.load(handle))
+    with args.dataset.open(encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.DictReader(handle))
     audit = validate_rows(rows)
     partitions = {s: [r for r in rows if r["split"] == s] for s in ("train", "validation", "test")}
@@ -38,6 +57,7 @@ def main():
     trials = []
     candidates = []
     for c in (0.3, 1, 4, 12):
+        print(f"Fitting C={c} on {len(y_train)} training sentences...", flush=True)
         candidate = LogisticRegression(C=c, max_iter=1000, solver="lbfgs", random_state=20260912)
         candidate.fit(X_train, y_train)
         metric = float(f1_score(y_valid, candidate.predict(X_valid), average="macro"))
@@ -58,6 +78,8 @@ def main():
     eligible = [c for c in choices if c["accepted_accuracy"] >= 0.75 and c["coverage"] >= 0.10]
     chosen = max(eligible, key=lambda c: c["coverage"]) if eligible else choices[-1]
     model = {"format": "innerself-linear-v1", "data_source": "synthetic", "real_respondents": 0,
+             "dataset_rows": len(rows), "training_rows": len(partitions["train"]),
+             "dataset_generators": audit["generator_counts"], "split_counts": audit["split_counts"],
              "threshold": chosen["threshold"], "vocabulary": {k: int(v) for k, v in vectorizer.vocabulary_.items()},
              "idf": vectorizer.idf_.round(8).tolist(), "classes": classifier.classes_.tolist(),
              "coef": classifier.coef_.round(8).tolist(), "intercept": classifier.intercept_.round(8).tolist(),
@@ -78,6 +100,8 @@ def main():
     runtime_labels = np.array([f"{p['function']}:{p['stance']}" if p["accepted"] else "abstain" for p in runtime_predictions])
     report = {"scope": "SYNTHETIC held-out semantic families only. NOT measured accuracy on people.",
               "real_world_validation": "not_performed", "dataset_audit": audit,
+              "dataset_sha256": model["dataset_sha256"],
+              "software_versions": {"numpy": np.__version__, "scikit_learn": sklearn.__version__},
               "features": "TF-IDF word unigrams+bigrams + character 3/4-grams; text only", "classifier": "multinomial LogisticRegression",
               "hyperparameter_search": trials,
               "hyperparameters": {"C": trials[best]["C"], "max_iter": 1000, "sublinear_tf": True},
@@ -92,6 +116,21 @@ def main():
               "confusion_matrix": confusion_matrix(y_test, predicted, labels=classifier.classes_).tolist(),
               "classification_report": classification_report(y_test, predicted, zero_division=0, output_dict=True),
               "portable_inference_parity": "passed, atol=1e-7"}
+    if baseline is not None:
+        print("Comparing the previous and new models on identical held-out data...", flush=True)
+        report["baseline_comparison"] = {
+            "baseline_dataset_sha256": baseline.model.get("dataset_sha256"),
+            "test_rows": len(partitions["test"]),
+            "scope": "Both models evaluated on the current test split; no model selection uses these results.",
+            "by_generator": {},
+        }
+        for version in sorted(audit["generator_counts"]):
+            samples = [r for r in partitions["test"] if r["generator_version"] == version]
+            if samples:
+                report["baseline_comparison"]["by_generator"][version] = {
+                    "previous": evaluate_portable(baseline, samples),
+                    "current": evaluate_portable(portable, samples),
+                }
     args.output_dir.mkdir(parents=True, exist_ok=True)
     encoded = json.dumps(model, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     (args.output_dir / "cognitive_text.json.gz").write_bytes(gzip.compress(encoded, mtime=0))

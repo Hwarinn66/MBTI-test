@@ -1,0 +1,2 @@
+# Preserve dataset bytes and their SHA-256 hashes on Windows and Linux.
+*.csv -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

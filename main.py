@@ -74,14 +74,18 @@ def questionnaire():
 
 @app.get("/health")
 def health():
+    training = None
     try:
-        load_classifier()
+        model = load_classifier().model
         status = "ready"
+        training = {key: model.get(key) for key in
+                    ("dataset_rows", "training_rows", "dataset_generators", "split_counts", "dataset_sha256")}
     except (OSError, ValueError, EOFError, KeyError):
         status = "unavailable"
     return {"status": "ok", "questionnaire_version": QUESTIONNAIRE_VERSION,
             "classifier": status, "narrator": availability(), "external_ai": False,
-            "training_data": "synthetic", "real_world_validation": "not_performed"}
+            "training_data": "synthetic", "classifier_training": training,
+            "real_world_validation": "not_performed"}
 
 
 @app.get("/famous_people.json")

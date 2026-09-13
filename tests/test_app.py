@@ -122,6 +122,23 @@ class AppTests(unittest.TestCase):
         self.assertEqual(len(result["reflection"]["question_insights"]), 32)
         self.assertEqual(result["training_data_source"], "synthetic")
 
+    def test_health_identifies_the_active_merged_model(self):
+        status = self.client.get("/health").json()
+        self.assertEqual(status["classifier"], "ready")
+        training = status["classifier_training"]
+        self.assertEqual(training["dataset_rows"], 25000)
+        self.assertEqual(training["training_rows"], 16944)
+        self.assertEqual(training["dataset_generators"], {
+            "synthetic-cognitive-v1": 9000, "synthetic-cognitive-v2": 16000})
+        self.assertEqual(sum(training["split_counts"].values()), 25000)
+        self.assertEqual(training["dataset_sha256"], load_classifier().model["dataset_sha256"])
+
+    def test_health_does_not_report_training_when_model_unavailable(self):
+        with patch("main.load_classifier", side_effect=OSError("missing model")):
+            status = self.client.get("/health").json()
+        self.assertEqual(status["classifier"], "unavailable")
+        self.assertIsNone(status["classifier_training"])
+
     def test_sixteen_questionnaire_profiles(self):
         for target in FUNCTION_STACKS:
             with self.subTest(target=target):

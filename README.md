@@ -157,32 +157,62 @@ Pola delapan indeks dipusatkan pada rata-ratanya, lalu dibandingkan dengan profi
 
 ## Dataset dan training
 
-`data/cognitive_reasons.csv` berisi **9.000 kalimat sintetis unik**, bukan 9.000 manusia. Targetnya label pola bahasa fungsi/sikap, bukan label MBTI seorang responden.
+`data/cognitive_reasons.csv` berisi **25.000 kalimat sintetis unik**: 9.000 dari generator v1 ditambah 16.000 dari unggahan `cognitive_reasons_v2.csv`. Targetnya label pola bahasa fungsi/sikap, bukan label MBTI seorang responden. Setiap satu dari 25 label memiliki 1.000 contoh. Tidak ada responden nyata dalam dataset ini.
 
 | Kolom | Makna |
 | --- | --- |
-| `sample_id` | ID sampel sintetis |
+| `sample_id` | ID sampel dengan awalan versi agar ID v1/v2 tidak bertabrakan |
 | `text` | Contoh alasan dalam bahasa Indonesia |
 | `function`, `stance` | Hipotesis label fungsi dan sikap |
 | `label` | 24 gabungan fungsi/sikap + kelas unknown |
-| `family_id` | Keluarga makna untuk mengelompokkan variasi kalimat |
+| `family_id` | Keluarga makna yang diselaraskan lintas versi |
 | `split` | train / validation / test |
 | `source` | Selalu synthetic |
 | `generator_version` | Versi generator |
+| `source_sample_id`, `source_family_id`, `source_split` | Identitas dan pembagian asli sebelum penggabungan |
 
-Generator memiliki 12 keluarga makna per fungsi dan 12 keluarga unknown. Variasi memakai konteks, kata ganti, serta dukungan/penolakan/kondisi campuran. **Variasi template bukan observasi manusia independen.** Semua variasi satu keluarga berada di split yang sama: 6.000 training, 1.500 validasi, 1.500 test. Metadata mencatat seed, hash, keunikan, dan tidak adanya tumpang-tindih keluarga.
+File v2 asli disimpan tanpa perubahan di `data/sources/cognitive_reasons_v2.csv`. Saat diimpor, 640 label `unknown:unknown` diseragamkan menjadi `unknown`. Semua 138 keluarga v2 awalnya tersebar di beberapa split. Selain itu, nomor keluarga v2 tidak selalu memiliki makna yang sama dengan nomor v1; misalnya `Ne-07` v2 merupakan parafrasa keluarga `Ne-10` v1.
+
+`merge_datasets.py` memetakan keluarga tersebut secara eksplisit sebelum training dan mempertahankan pembagian asli v1. Pengelompokan ini merupakan penilaian konservatif penulis, bukan anotasi ahli atau jaminan tidak ada kemiripan semantik lain. File v2 yang berubah ditolak berdasarkan SHA-256 sampai pemetaannya ditinjau lagi. Jangan hanya menambahkan awalan versi pada keluarga lalu mengacak baris, karena parafrasa lintas versi bisa masuk ke data uji dan latihan sekaligus.
+
+Pembagian gabungan adalah **16.944 training, 4.268 validasi, dan 3.788 test**. Tidak ada duplikat setelah normalisasi Unicode/huruf/spasi, serta tidak ada ID keluarga hasil pemetaan yang melintasi split. Semua split mengandung 25 label; proporsinya tidak harus sama karena keluarga dijaga tetap utuh. Metadata mencatat asal data, pemetaan, jumlah perbaikan, seed, dan hash. **Variasi template bukan observasi manusia independen.**
+
+Model hasil training sudah disertakan, sehingga pengguna web cukup menjalankan aplikasi. Untuk membangun ulang dataset gabungan dan model:
 
 ```powershell
 python -m pip install -r requirements-training.txt
-python generate_dataset.py
+python merge_datasets.py
 python train_model.py
 ```
+
+`python generate_dataset.py` hanya menghasilkan v1 di `data/cognitive_reasons_v1.csv`; sekarang perintah ini tidak menimpa dataset gabungan aktif. Generator v1 tetap dipakai langsung oleh proses penggabungan. `dataset_utils.py` menolak label yang tidak konsisten, kolom wajib kosong, sumber bukan sintetis, ID/teks duplikat, keluarga lintas-split, dan kelas yang hilang dari suatu split.
+
+Untuk membandingkan dengan model sebelumnya pada baris test yang persis sama, sebelum menimpanya:
+
+```powershell
+python train_model.py --baseline-model models/cognitive_text.json.gz
+```
+
+Model pembanding dibaca sebelum file output diperbarui. Setelah pembaruan ini, perintah tersebut membandingkan dengan model yang saat itu ada di komputermu, bukan otomatis mengambil versi lama dari Git.
 
 Training memakai TF-IDF kata dan subkata + Logistic Regression. TF-IDF hanya di-fit pada training. `C` dan ambang penolakan dipilih dari validasi, bukan dari test. Kolom ID, fungsi, label, keluarga, serta split tidak dimasukkan sebagai fitur. Model diekspor sebagai koefisien JSON terkompresi yang dapat dijalankan tanpa scikit-learn/pickle pada server web.
 
 `models/evaluation.json` menyimpan hasil validasi, matriks kebingungan, macro-F1, cakupan prediksi diterima, dan akurasi di antara prediksi diterima. Baca **cakupan dan kegagalan**, bukan hanya satu angka akurasi. Hasil-hasil ini menguji bahasa sintetis; **jangan dilaporkan sebagai akurasi penentuan MBTI manusia**. Dataset/pipeline ini dikembangkan secara iteratif; untuk skripsi, gunakan data uji manusia baru yang dikunci sebelum pemilihan model.
 
-Dataset CSV lama serta loader/Gemini lama diganti, tidak digunakan sebagai ground truth dan tidak dicampur dengan dataset baru. Versi lamanya tetap dapat ditemukan di riwayat Git.
+Hasil training gabungan pada lingkungan pengembangan:
+
+| Ukuran pada test sintetis | Hasil |
+| --- | --- |
+| Ketepatan klasifikasi fungsi/sikap, seluruh 3.788 baris | 74,68% |
+| Macro-F1 seluruh label | 0,7196 |
+| Proporsi baris yang diterima oleh jalur inferensi aplikasi | 15,44% |
+| Ketepatan pada bagian yang diterima saja | 97,44% |
+
+Angka 97,44% **bukan akurasi seluruh data**: model menahan prediksi pada 84,56% kalimat uji. Pada test yang sama, model sebelumnya mencapai ketepatan keseluruhan 68,82%, menerima 33,74% kalimat, dan benar pada 81,85% dari kalimat yang diterimanya. Model baru lebih selektif; penambahan data tidak menjamin lebih banyak alasan akan dikenali. Pada 1.500 test v1, ketepatan keseluruhan naik 88% → 93%, tetapi cakupan turun 19,73% → 6,67%. Pada 2.288 test v2, ketepatan naik 56,25% → 62,67%, dan cakupan turun 42,92% → 21,20%. Model tetap dapat menghasilkan catatan bahwa alasan belum cukup jelas. Jangan menurunkan ambang hanya untuk menghilangkan catatan itu.
+
+`/health` kini menyertakan `classifier_training`: `dataset_rows` menunjukkan total korpus (25.000), `training_rows` menunjukkan yang benar-benar dipakai untuk fitting (16.944), disertai jumlah per versi/split dan hash dataset. Restart server setelah mengganti model karena classifier disimpan dalam cache proses. Training ini memperbarui pengenal fungsi/sikap, **tidak melakukan fine-tuning Qwen**.
+
+Dataset lama berlabel tipe MBTI serta loader/Gemini lama tetap tidak digunakan sebagai ground truth. Yang digabungkan di sini adalah korpus alasan fungsi/sikap v1 dan v2 yang skemanya kompatibel; label tipe 16 MBTI tidak diubah begitu saja menjadi label fungsi sebuah kalimat. Versi lama masih tersedia di riwayat Git.
 
 Untuk penelitian nyata, kumpulkan alasan dengan persetujuan responden, rancang label fungsi/tipe referensi bersama pembimbing/ahli, pisahkan berdasarkan responden, dan evaluasi reliabilitas anotasi. Jangan menjadikan hasil model ini sendiri sebagai label benar untuk training berikutnya.
 
@@ -215,6 +245,8 @@ Set variabel `PYTHON` jika executable Python yang dipakai pengujian UI berbeda. 
 
 - [Myers & Briggs Foundation — Type dynamics and processes](https://www.myersbriggs.org/unique-features-of-myers-briggs/type-dynamics-processes/): referensi konsep, bukan validasi tes/profil pembanding buatan proyek.
 - [scikit-learn — Text feature extraction](https://scikit-learn.org/stable/modules/feature_extraction.html#text-feature-extraction).
+- [scikit-learn — Pencegahan data leakage](https://scikit-learn.org/stable/common_pitfalls.html#data-leakage).
+- [scikit-learn — Validasi dengan kelompok data terkait](https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators-for-grouped-data).
 - [llama-cpp-python — installation and structured chat](https://llama-cpp-python.readthedocs.io/en/latest/).
 - [Qwen3 4B GGUF — sumber model dan lisensi Apache-2.0](https://huggingface.co/Qwen/Qwen3-4B-GGUF).
 - Ikon Lucide lokal: `static/vendor/LUCIDE-LICENSE.txt`. Tidak memerlukan CDN atau aset berbayar.
