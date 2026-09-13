@@ -46,7 +46,7 @@ def _load_model():
     if _model is None:
         from llama_cpp import Llama
         # Do not force ChatML here. Qwen3 GGUF files contain their own chat
-        # template, and using that template is important for /no_think support.
+        # template. /no_think is kept in the instruction for older runtimes.
         _model = Llama(model_path=str(model_path()), n_ctx=4096,
                        n_threads=max(1, int(os.getenv("LOCAL_LLM_THREADS", "4"))),
                        n_gpu_layers=int(os.getenv("LOCAL_LLM_GPU_LAYERS", "0")),
@@ -55,12 +55,7 @@ def _load_model():
 
 
 def _extract_json_payload(content):
-    """Remove optional Qwen thinking wrappers and recover the JSON object.
-
-    The structured-output grammar should already produce JSON. This is only a
-    compatibility layer for local models/templates that still prepend a
-    <think> block or markdown fence.
-    """
+    """Remove optional Qwen thinking wrappers and recover the JSON object."""
     if not isinstance(content, str):
         raise ValueError("Missing narration content")
     cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.I | re.S).strip()
@@ -74,15 +69,26 @@ def _extract_json_payload(content):
         return json.loads(cleaned[start:end + 1])
 
 
-def _chat_completion(model, **kwargs):
-    """Disable Qwen3 thinking when the installed llama-cpp-python exposes it."""
+def _supported_chat_kwargs(model, kwargs):
+    """Keep only arguments supported by the installed llama-cpp-python.
+
+    llama-cpp-python releases differ in create_chat_completion parameters.
+    In particular, some versions do not expose stopping_criteria or
+    chat_template_kwargs at this level. Passing either then raises TypeError
+    before generation starts.
+    """
     try:
-        params = inspect.signature(model.create_chat_completion).parameters
+        signature = inspect.signature(model.create_chat_completion)
+        params = signature.parameters
     except (TypeError, ValueError):
-        params = {}
-    if "chat_template_kwargs" in params:
-        kwargs["chat_template_kwargs"] = {"enable_thinking": False}
-    return model.create_chat_completion(**kwargs)
+        return kwargs
+    if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()):
+        return kwargs
+    return {key: value for key, value in kwargs.items() if key in params}
+
+
+def _chat_completion(model, **kwargs):
+    return model.create_chat_completion(**_supported_chat_kwargs(model, kwargs))
 
 
 def _validate_row(row, by_id, decision):
@@ -168,7 +174,6 @@ def enhance_reflection(reflection, decision):
     rejected_count = 0
     last_error = None
     try:
-        from llama_cpp import StoppingCriteriaList
         started = time.monotonic()
         model = _load_model()
         instruction = (
@@ -191,18 +196,18 @@ def enhance_reflection(reflection, decision):
                 last_error = "total_timeout"
                 break
             batch = selected[offset:offset + BATCH_SIZE]
-            batch_deadline = min(deadline, time.monotonic() + BATCH_SECONDS)
             schema = {"type": "object", "properties": {"paragraphs": {"type": "array", "minItems": 1, "maxItems": len(batch),
                       "items": {"type": "object", "properties": {"question_ids": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "integer"}}, "text": {"type": "string"}}, "required": ["question_ids", "text"]}}}, "required": ["paragraphs"]}
             evidence = [{k: i[k] for k in ("question_id", "question", "choice_label", "reason", "relationship", "text_function", "text_stance", "text_recognized")} for i in batch]
             try:
+                # Keep the call compatible with older llama-cpp-python. Unsupported
+                # arguments are filtered before calling create_chat_completion.
                 response = _chat_completion(
                     model,
                     messages=[{"role": "system", "content": instruction},
                               {"role": "user", "content": json.dumps({"type": decision["type"], "evidence": evidence}, ensure_ascii=False)}],
                     response_format={"type": "json_object", "schema": schema},
                     max_tokens=350 * len(batch), temperature=0.20,
-                    stopping_criteria=StoppingCriteriaList([lambda *_, until=batch_deadline: time.monotonic() >= until]),
                 )
                 content = response["choices"][0]["message"].get("content")
                 payload = _extract_json_payload(content)
@@ -213,12 +218,12 @@ def enhance_reflection(reflection, decision):
                     last_error = "validation_rejected"
             except Exception as exc:
                 rejected_count += len(batch)
-                last_error = type(exc).__name__
-                logger.warning("Local narration batch unavailable (%s); keeping evidence-based discussions", type(exc).__name__)
+                last_error = f"{type(exc).__name__}: {exc}"
+                logger.warning("Local narration batch unavailable: %s", last_error)
     except Exception as exc:
         rejected_count = len(selected)
-        last_error = type(exc).__name__
-        logger.warning("Local narration unavailable (%s); using evidence-based reflection", type(exc).__name__)
+        last_error = f"{type(exc).__name__}: {exc}"
+        logger.warning("Local narration unavailable: %s", last_error)
     finally:
         LOCK.release()
     if not generated:
