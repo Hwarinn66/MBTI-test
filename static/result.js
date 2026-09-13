@@ -17,66 +17,80 @@ const TYPES = {
   ESTP:['Pengambil langkah','Kamu cenderung cepat membaca keadaan, nyaman mencoba secara langsung, dan belajar dari apa yang terjadi di lapangan.'],
   ESFP:['Pembawa kehangatan','Kamu cenderung menikmati momen, terhubung lewat pengalaman bersama, dan merespons peluang yang ada di depanmu.'],
 };
-const DIMENSIONS = [
-  ['EI','Ekstroversi','Introversi','Energi sosial'], ['SN','Sensing','Intuisi','Cara memahami'],
-  ['TF','Thinking','Feeling','Cara memutuskan'], ['JP','Judging','Perceiving','Ritme keseharian'],
-];
-const FUNCTIONS={Ni:'Introverted Intuition',Ne:'Extraverted Intuition',Si:'Introverted Sensing',Se:'Extraverted Sensing',Ti:'Introverted Thinking',Te:'Extraverted Thinking',Fi:'Introverted Feeling',Fe:'Extraverted Feeling'};
+
+const FUNCTIONS={Te:'Extraverted Thinking',Ti:'Introverted Thinking',Fe:'Extraverted Feeling',Fi:'Introverted Feeling',Ne:'Extraverted Intuition',Ni:'Introverted Intuition',Se:'Extraverted Sensing',Si:'Introverted Sensing'};
 const CATEGORIES={all:'Semua',anime:'Anime',artis:'Tokoh publik',movies:'Film & TV',kartun:'Kartun'};
 let currentResult=null, allPeople=[], filter='all', count=8, toastTimer;
 const isNumber=value=>typeof value==='number'&&Number.isFinite(value);
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 function element(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;}
-function validResult(result){return result && typeof result==='object' && /^[EIX][SNX][TFX][JPX]$/.test(result.final_result) && result.success!==false;}
-function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>{$('toast').hidden=true;},4500);}
-function renderDimensions(result){
-  const holder=$('dimensions-chart');holder.replaceChildren();
-  for(const [dim,first,second,title] of DIMENSIONS){
-    const a=result.dimension_scores?.[dim[0]], b=result.dimension_scores?.[dim[1]];
-    const usable=isNumber(a)&&isNumber(b)&&a>=0&&b>=0&&a+b>0;
-    const left=usable?Math.round(100*a/(a+b)):null;
-    const row=element('div','dimension-row');
-    const caption=element('div','dimension-labels');
-    caption.append(element('strong','',`${first} (${dim[0]})`),element('strong','',`${second} (${dim[1]})`));
-    const track=element('div','dimension-track');
-    const bar=element('span');bar.style.width=`${left??0}%`;track.append(bar);track.setAttribute('role','img');
-    track.setAttribute('aria-label',usable?`${title}: ${left}% ${first}, ${100-left}% ${second}`:`${title}: skor tidak tersedia`);
-    const value=element('p','dimension-value',usable?(left===50?'50% · Seimbang · 50%':`${left}% / ${100-left}%`):'Rincian skor tidak tersedia untuk hasil ini.');
-    row.append(caption,track,value);holder.append(row);
-  }
+function validResult(r){
+  return r?.schema_version===2 && r.success===true && (r.final_result===null||Object.hasOwn(TYPES,r.final_result)) &&
+    r.functions && Object.keys(FUNCTIONS).every(f=>isNumber(r.functions[f]?.index)&&isNumber(r.functions[f]?.questionnaire_index)) &&
+    Array.isArray(r.reflection?.paragraphs) && Array.isArray(r.reflection?.question_insights) && Array.isArray(r.decision?.candidates);
 }
+function toast(text){clearTimeout(toastTimer);$('toast').textContent=text;$('toast').hidden=false;toastTimer=setTimeout(()=>{$('toast').hidden=true;},4500);}
 function renderFunctions(result){
+  const chart=$('cognitive-chart');chart.replaceChildren();
+  const ranked=Object.entries(result.functions).filter(([f])=>Object.hasOwn(FUNCTIONS,f)).sort((a,b)=>b[1].index-a[1].index);
+  for(const [f,score] of ranked){
+    const row=element('div','cognitive-row');
+    const label=element('div','cognitive-row-label');
+    label.append(element('strong','',f),element('span','',score.title),element('b','',score.index.toFixed(1)));
+    const track=element('div','cognitive-track');const bar=element('span','cognitive-fill');
+    bar.style.width=clamp(score.index,0,100)+'%';
+    const marker=element('span','questionnaire-marker');marker.style.left=clamp(score.questionnaire_index,0,100)+'%';
+    track.append(bar,marker);track.setAttribute('role','img');track.setAttribute('aria-label',f+': gabungan '+score.index+', pilihan saja '+score.questionnaire_index+', skala 0 sampai 100');
+    const caption=element('p','function-evidence','Pilihan: +'+score.support+' / −'+score.opposition+' · '+score.neutral_count+' netral');
+    row.append(label,track,caption);chart.append(row);
+  }
   const holder=$('function-stack');holder.replaceChildren();
   const stack=Array.isArray(result.function_stack)?result.function_stack.filter(f=>Object.hasOwn(FUNCTIONS,f)).slice(0,4):[];
-  if(result.final_result.includes('X')||stack.length!==4){
-    $('function-note').textContent='Susunan fungsi belum ditampilkan karena tipe belum lengkap. X menandakan dua sisi yang seimbang, sehingga belum ada satu susunan yang bisa dipilih.';
-    $('cognitive-details').hidden=true;return;
-  }
   const roles=['Dominan','Pendukung','Tersier','Inferior'];
-  stack.forEach((f,i)=>{const item=element('div','stack-item');item.title=FUNCTIONS[f];item.append(element('small','',`${i+1} · ${roles[i]}`),element('strong','',f));holder.append(item);});
-  $('function-note').textContent='Ilustrasi dari tipe dan skor dimensi, bukan pengukuran langsung kemampuan kognitif.';
-  const chart=$('cognitive-chart');chart.replaceChildren();
-  let items=0;
-  for(const [f,name] of Object.entries(FUNCTIONS)){
-    const score=result.cognitive_scores?.[f];if(!isNumber(score))continue;
-    items++;
-    const row=element('div','function-row');row.title=name;
-    const track=element('span','mini-track');const bar=element('span');bar.style.width=`${clamp(score/50*100,0,100)}%`;track.append(bar);
-    row.append(element('strong','',f),track,element('span','',`${clamp(score,0,50).toFixed(1)}`));chart.append(row);
-  }
-  $('cognitive-details').hidden=!items;
+  stack.forEach((f,i)=>{const item=element('div','stack-item');item.title=FUNCTIONS[f];item.append(element('small','',(i+1)+' · '+roles[i]),element('strong','',f));holder.append(item);});
+  $('function-note').textContent=stack.length?'Susunan fungsi kandidat, bukan sekadar empat skor tertinggi. Delapan indeks dicocokkan dengan seluruh 16 susunan.':'Belum ada satu susunan yang cukup berbeda. Semua fungsi tetap ditampilkan tanpa memaksakan tipe.';
+  const candidates=$('candidate-list');candidates.replaceChildren();
+  result.decision.candidates.slice(0,3).forEach((candidate,i)=>{
+    const item=element('div','candidate-row');
+    const description=element('div');description.append(element('strong','',candidate.type),element('small','',candidate.stack.join(' – ')));
+    item.append(element('span','candidate-number',String(i+1)),description,element('b','',candidate.fit.toFixed(1)));candidates.append(item);
+  });
+  $('score-comparison').textContent='Pilihan saja: '+(result.questionnaire_result||'belum pasti')+' · Pilihan + alasan: '+(result.final_result||'belum pasti');
 }
 function renderAnalysis(result){
-  const source={available:'Ulasan AI berdasarkan jawaban dan konteks yang kamu berikan.',not_requested:'Refleksi dasar dari skor jawabanmu.',not_configured:'Refleksi dasar · Ulasan AI belum tersedia.',unavailable:'Refleksi dasar · Layanan AI sedang tidak tersedia.'};
-  $('analysis-source').textContent=source[result.ai_status]||'Ulasan dari hasil yang tersimpan.';
-  const note=typeof result.ai_note==='string'?result.ai_note:'Ulasan tidak tersedia. Kamu tetap bisa membaca rincian skor di atas.';
-  const holder=$('ai-note');holder.replaceChildren();
-  // All dynamic copy, including model output, is text. Never execute stored HTML.
-  note.slice(0,18000).replace(/\\n/g,'\n').split(/\n\s*\n/).filter(Boolean).forEach(p=>holder.append(element('p','',p.trim())));
-  const details=[];
-  if(isNumber(result.neutral_percentage))details.push(`${Math.round(clamp(result.neutral_percentage,0,100))}% jawaban netral`);
-  if(isNumber(result.dataset_similarity))details.push(`Kemiripan teks referensi ${Math.round(clamp(result.dataset_similarity,0,1)*100)}% (indikator kemiripan, bukan akurasi)`);
-  $('analysis-metrics').textContent=details.join(' · ');$('analysis-metrics').hidden=!details.length;
+  const reflection=result.reflection;
+  const generative=reflection.mode==='local_llm';
+  $('analysis-source').textContent=generative?'Narasi model bahasa lokal · berjalan di server ini, tanpa API AI eksternal.':'Narasi lokal berbasis bukti · disusun dari kutipan, pilihan, dan hasil klasifikasi teks.';
+  const note=$('ai-note');note.replaceChildren();
+  reflection.paragraphs.filter(p=>typeof p==='string').slice(0,14).forEach(p=>note.append(element('p','',p.slice(0,6000))));
+  $('analysis-metrics').textContent=result.neutral_count+' jawaban netral · '+result.reason_count+' alasan tertulis · '+result.recognized_reason_count+' alasan dikenali model';
+  const llmStatus=reflection.local_llm_status;
+  const hints={not_configured:'Model bahasa lokal belum dipasang. Yang tampil adalah narasi berbasis bukti, bukan tulisan model generatif.',runtime_missing:'File model tersedia, tetapi runtime llama-cpp-python belum dipasang.',fallback:'Model bahasa lokal belum menghasilkan narasi yang lolos pemeriksaan. Narasi berbasis bukti tetap tersedia.',busy:'Model bahasa lokal sedang digunakan. Narasi berbasis bukti tetap ditampilkan.',no_reasons:'Narasi generatif memerlukan alasan tertulis; hasil pilihan tetap tersedia.'};
+  $('narrator-notice').hidden=!hints[llmStatus];$('narrator-notice').textContent=hints[llmStatus]||'';
+  const select=$('reason-filter');select.checked=result.reason_count>0;
+  const draw=()=>{
+    const holder=$('question-insights');holder.replaceChildren();
+    const entries=reflection.question_insights.filter(i=>!select.checked||i.reason);
+    const relation={empty:'Pilihan saja',aligned:'Selaras',contradictory:'Perlu ditinjau',qualified:'Ada nuansa',other_function:'Sudut pandang lain',unclear:'Bukti belum jelas'};
+    entries.forEach(insight=>{
+      if(!Number.isInteger(insight.question_id)||insight.question_id<1||insight.question_id>32)return;
+      const details=element('details','insight-card');
+      const summary=element('summary');
+      const heading=element('span','insight-heading');heading.append(element('strong','','Soal '+insight.question_id),element('span','',insight.question));
+      const badge=element('span','insight-badge',relation[insight.relationship]||'Refleksi');
+      if(insight.relationship==='contradictory')badge.classList.add('needs-review');
+      summary.append(heading,badge);details.append(summary);
+      const body=element('div','insight-body');
+      if(insight.reason)body.append(element('blockquote','reason-quote',insight.reason.slice(0,600)));
+      body.append(element('p','insight-choice','Pilihanmu: '+insight.choice_label));
+      const paragraphs=Array.isArray(insight.paragraphs)?insight.paragraphs:[];
+      // The first paragraph repeats the displayed choice/quote.
+      paragraphs.slice(1).filter(p=>typeof p==='string').forEach(p=>body.append(element('p','',p.slice(0,3000))));
+      details.append(body);holder.append(details);
+    });
+    $('insights-empty').hidden=entries.length>0;
+  };
+  select.onchange=draw;draw();
 }
 function drawPeople(){
   const grid=$('famous-people-grid');grid.replaceChildren();
@@ -98,7 +112,7 @@ function drawPeople(){
   document.querySelectorAll('.filter-button').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.category===filter)));
 }
 async function loadPeople(type){
-  if(type.includes('X')){$('people-section').hidden=true;return;}
+  if(!type){$('people-section').hidden=true;return;}
   $('people-section').hidden=false;
   try{
     const response=await fetch('/famous_people.json',{signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('people');
@@ -113,43 +127,40 @@ async function loadPeople(type){
     $('load-more').onclick=()=>{count+=8;drawPeople();};drawPeople();
   }catch{$('people-empty').hidden=false;$('people-empty').textContent='Referensi tokoh belum bisa dimuat. Hasil tesmu tetap tersedia di atas.';}
 }
+
 async function share(){
   const type=currentResult.final_result;
-  const text=type.includes('X')?`Aku sudah berefleksi lewat InnerSelf! Polaku ${type}; X berarti ada preferensi yang masih seimbang.`:`Hasil refleksi kepribadianku di InnerSelf: ${type} — ${TYPES[type][0]}.`;
+  const text=type?'Hasil refleksiku di InnerSelf: '+type+' ('+currentResult.function_stack.join('–')+'). Hasil eksploratif, bukan tes MBTI resmi.':'Aku sudah berefleksi lewat InnerSelf. Pola fungsiku belum mengarah pada satu tipe yang cukup jelas.';
   if(navigator.share){try{await navigator.share({title:'Hasil InnerSelf',text});return;}catch(error){if(error.name==='AbortError')return;}}
   if(navigator.clipboard&&window.isSecureContext){try{await navigator.clipboard.writeText(text);toast('Ringkasan hasil berhasil disalin.');return;}catch{}}
   $('share-text').value=text;$('share-dialog').showModal();$('share-text').focus();$('share-text').select();
 }
 export function renderResult(result){
   if(!validResult(result)){showInvalid();return;}
-  currentResult=result;
-  $('empty-result').hidden=true;$('result-content').hidden=false;
+  currentResult=result;$('empty-result').hidden=true;$('result-content').hidden=false;
   const type=result.final_result;
   const name=typeof result.user_name==='string'?result.user_name.slice(0,60).trim():'';
-  $('result-greeting').textContent=name?`Ini refleksimu, ${name}.`:'Hasil refleksimu.';
-  $('mbti-type').textContent=type;
-  $('mbti-nickname').textContent=TYPES[type]?.[0]||'Preferensimu masih seimbang';
-  $('mbti-description').textContent=TYPES[type]?.[1]||'Beberapa sisi mendapat skor yang sama. Huruf X memberi ruang untuk ketidakpastian, tanpa memaksakan satu tipe kepribadian.';
+  $('result-greeting').textContent=name?'Ini refleksimu, '+name+'.':'Hasil refleksimu.';
+  $('mbti-type').textContent=type||'Belum pasti';
+  $('mbti-type').classList.toggle('unresolved-code',!type);
+  $('mbti-nickname').textContent=TYPES[type]?.[0]||'Ada ruang untuk mengenal polamu';
+  $('mbti-description').textContent=type?'Kandidat terdekat berdasarkan delapan fungsi kognitif. Cerita di balik jawabanmu lebih penting daripada sekadar empat huruf.':'Beberapa susunan memiliki kecocokan yang sama atau pola skormu belum cukup berbeda. Jawaban netral tetap sah dan tetap dihitung.';
   const chips=$('result-chips');chips.replaceChildren();
-  DIMENSIONS.forEach(([dim,a,b],i)=>chips.append(element('span','result-chip',type[i]==='X'?`${dim[0]}/${dim[1]} seimbang`:type[i]===dim[0]?a:b)));
-  const status=$('result-status');const notices=[];
-  if(type.includes('X'))notices.push('X berarti belum ada kecenderungan yang lebih kuat. Tinjau jawaban bila ada yang kurang sesuai; jawaban netral tetap valid.');
-  if(result.ai_status==='not_configured')notices.push('Ulasan AI belum diaktifkan oleh pengelola situs. Hasil skor dan refleksi dasar tetap tersedia.');
-  else if(result.ai_status==='unavailable')notices.push('Layanan AI belum dapat merespons. Hasil di bawah tetap dihitung dari seluruh jawabanmu.');
-  status.hidden=!notices.length;status.textContent=notices.join(' ');
-  renderDimensions(result);renderFunctions(result);renderAnalysis(result);loadPeople(type);
+  (result.function_stack||[]).forEach(f=>chips.append(element('span','result-chip',f+' · '+FUNCTIONS[f])));
+  const messages=Array.isArray(result.warnings)?result.warnings.filter(w=>typeof w==='string'):[];
+  if(result.decision.status==='tentative')messages.push('Kandidat masih berdekatan. Jangan membaca hasil ini sebagai tipe yang pasti.');
+  if(result.is_adjusted)messages.push('Bukti dari alasan mengubah kandidat dibanding pilihan saja. Lihat rincian agar perbedaannya dapat ditinjau.');
+  $('result-status').hidden=!messages.length;$('result-status').textContent=messages.join(' ');
+  renderFunctions(result);renderAnalysis(result);loadPeople(type);
   $('share-result').onclick=share;
 }
 function showInvalid(){
   $('empty-result').hidden=false;$('result-content').hidden=true;
-  $('empty-title').textContent='Hasil tersimpan belum bisa dibaca.';
-  $('empty-description').textContent='Kembali ke tes untuk meninjau jawabanmu dan menghitung hasil lagi. Tidak ada hasil contoh yang ditampilkan.';
+  $('empty-title').textContent='Hasil lama perlu dihitung ulang.';
+  $('empty-description').textContent='Tes sekarang menilai delapan fungsi kognitif. Hasil versi empat dimensi tidak dikonversi secara otomatis; silakan isi tes yang baru.';
 }
 function loadStoredResult(){
-  let raw;
-  try{raw=sessionStorage.getItem('mbti_result');}catch{}
-  // Read older results without adding new persistent personal data.
-  if(!raw){try{raw=localStorage.getItem('mbti_result');}catch{}}
+  let raw;try{raw=sessionStorage.getItem('mbti_result');}catch{}
   if(!raw)return;
   try{renderResult(JSON.parse(raw));}catch{showInvalid();}
 }

@@ -1,12 +1,15 @@
 'use strict';
 const $ = (id) => document.getElementById(id);
-const DRAFT_KEY = 'innerself_draft_v1';
+const DRAFT_KEY = 'innerself_draft_cognitive_v2';
 const RESULT_KEY = 'mbti_result';
-const labels = ['Sangat tidak setuju', 'Tidak setuju', 'Agak tidak setuju', 'Netral', 'Agak setuju', 'Setuju', 'Sangat setuju'];
-let questions = [], dimensions = {}, version = '', answers = {}, current = 0, busy = false, reviewing = false;
+const labels = ['Sangat tidak setuju', 'Tidak setuju', 'Agak tidak setuju', 'Netral · kadang iya, kadang tidak', 'Agak setuju', 'Setuju', 'Sangat setuju'];
+const choiceValues = [-3,-2,-1,'neutral',1,2,3];
+const choiceLabel = c => labels[choiceValues.indexOf(c)];
+const parseChoice = v => v === 'neutral' ? v : Number(v);
+let questions = [], sections = {}, version = '', answers = {}, current = 0, busy = false, reviewing = false;
 let storageAvailable = true;
-const validScore = (s) => Number.isInteger(s) && s >= -3 && s <= 3;
-const answeredCount = () => questions.filter(q => validScore(answers[q.id]?.score)).length;
+const validChoice = (s) => choiceValues.includes(s);
+const answeredCount = () => questions.filter(q => validChoice(answers[q.id]?.choice)).length;
 
 function storageNotice() {
   if (!storageAvailable) {
@@ -16,7 +19,7 @@ function storageNotice() {
   }
 }
 function saveDraft() {
-  const draft = {version, answers, current, profile:{name:$('user-name').value, age:$('user-age').value, gender:$('user-gender').value, ai:$('use-ai').checked}};
+  const draft = {version, answers, current, profile:{name:$('user-name').value, age:$('user-age').value, gender:$('user-gender').value, local_llm:$('use-local-llm').checked}};
   try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); }
   catch { storageAvailable = false; storageNotice(); }
 }
@@ -30,8 +33,8 @@ function restoreDraft() {
     }
     for (const q of questions) {
       const item = saved.answers[q.id];
-      if (item && (validScore(item.score) || item.score === null)) {
-        answers[q.id] = {score:item.score, reason:typeof item.reason === 'string' ? item.reason.slice(0,600) : ''};
+      if (item && (validChoice(item.choice) || item.choice === null)) {
+        answers[q.id] = {choice:item.choice, reason:typeof item.reason === 'string' ? item.reason.slice(0,600) : ''};
       }
     }
     current = Number.isInteger(saved.current) ? Math.max(0,Math.min(questions.length-1,saved.current)) : 0;
@@ -39,7 +42,7 @@ function restoreDraft() {
     $('user-name').value = typeof profile.name === 'string' ? profile.name.slice(0,60) : '';
     $('user-age').value = /^\d{1,3}$/.test(String(profile.age)) ? profile.age : '';
     $('user-gender').value = ['Perempuan','Laki-laki'].includes(profile.gender) ? profile.gender : '';
-    $('use-ai').checked = profile.ai === true;
+    $('use-local-llm').checked = profile.local_llm === true;
   } catch { try { sessionStorage.removeItem(DRAFT_KEY); } catch { storageAvailable=false; storageNotice(); } }
 }
 function updateProgress() {
@@ -49,23 +52,23 @@ function updateProgress() {
   $('total-progress').max = questions.length;
   $('reset').hidden = !count && !Object.values(answers).some(a=>a.reason);
   document.querySelectorAll('.section-link').forEach(button => {
-    const dim=button.dataset.dimension;
-    const items=questions.filter(q=>q.dimension===dim);
-    const done=items.filter(q=>validScore(answers[q.id]?.score)).length;
-    button.classList.toggle('active', !reviewing && questions[current].dimension===dim);
+    const dim=button.dataset.section;
+    const items=questions.filter(q=>q.section===dim);
+    const done=items.filter(q=>validChoice(answers[q.id]?.choice)).length;
+    button.classList.toggle('active', !reviewing && questions[current].section===dim);
     button.classList.toggle('complete',done===items.length);
-    if (!reviewing && questions[current].dimension===dim) button.setAttribute('aria-current','step');
+    if (!reviewing && questions[current].section===dim) button.setAttribute('aria-current','step');
     else button.removeAttribute('aria-current');
     button.querySelector('small').textContent=`${done} dari ${items.length} terjawab`;
-    button.setAttribute('aria-label',`${dimensions[dim].title}, ${done} dari ${items.length} terjawab`);
+    button.setAttribute('aria-label',`${sections[dim].title}, ${done} dari ${items.length} terjawab`);
   });
 }
-function selectAnswer(score) {
+function selectAnswer(choice) {
   if (busy || reviewing) return;
   const q=questions[current];
-  answers[q.id] = {...answers[q.id],score,reason:$('reason').value};
-  document.querySelectorAll('input[name="agreement"]').forEach(input=>{input.checked=Number(input.value)===score;});
-  $('selection-label').textContent = labels[score+3];
+  answers[q.id] = {...answers[q.id],choice,reason:$('reason').value};
+  document.querySelectorAll('input[name="agreement"]').forEach(input=>{input.checked=input.value===String(choice);});
+  $('selection-label').textContent = choiceLabel(choice);
   $('next').disabled = false;
   saveDraft(); updateProgress();
 }
@@ -73,15 +76,15 @@ function renderQuestion(focus = false) {
   reviewing=false;
   $('question-content').hidden=false; $('review-content').hidden=true;
   const q=questions[current], answer=answers[q.id];
-  $('dimension-label').textContent=dimensions[q.dimension].title;
+  $('section-label').textContent=sections[q.section].title;
   $('question-number').textContent=String(current+1).padStart(2,'0');
   $('question-text').textContent=q.text;
-  document.querySelectorAll('input[name="agreement"]').forEach(input=>{input.checked=validScore(answer?.score)&&Number(input.value)===answer.score;});
-  $('selection-label').textContent=validScore(answer?.score)?labels[answer.score+3]:'Pilih jawaban yang paling mendekati.';
+  document.querySelectorAll('input[name="agreement"]').forEach(input=>{input.checked=validChoice(answer?.choice)&&input.value===String(answer.choice);});
+  $('selection-label').textContent=validChoice(answer?.choice)?choiceLabel(answer.choice):'Pilih jawaban yang paling mendekati.';
   $('reason').value=answer?.reason||''; $('reason-count').textContent=`${$('reason').value.length}/600`;
   $('reason-details').open=Boolean(answer?.reason);
   $('previous').disabled=current===0;
-  $('next').disabled=!validScore(answer?.score);
+  $('next').disabled=!validChoice(answer?.choice);
   $('next').querySelector('span').textContent=current===questions.length-1?'Tinjau hasil':'Lanjut';
   updateProgress(); saveDraft();
   if(focus) { $('question-text').focus({preventScroll:true}); $('question-area').scrollIntoView({block:'nearest',behavior:'auto'}); }
@@ -91,9 +94,9 @@ function renderReview() {
   $('question-content').hidden=true; $('review-content').hidden=false;
   const grid=$('review-grid'); grid.replaceChildren();
   questions.forEach((q,i)=>{
-    const complete=validScore(answers[q.id]?.score);
+    const complete=validChoice(answers[q.id]?.choice);
     const button=document.createElement('button');button.type='button';button.className='review-item'+(complete?'':' unanswered');
-    button.textContent=String(i+1);button.setAttribute('aria-label',`Pertanyaan ${i+1}: ${complete?labels[answers[q.id].score+3]:'belum dijawab'}`);
+    button.textContent=String(i+1);button.setAttribute('aria-label',`Pertanyaan ${i+1}: ${complete?choiceLabel(answers[q.id].choice):'belum dijawab'}`);
     button.addEventListener('click',()=>{current=i;renderQuestion(true);});grid.append(button);
   });
   updateProgress(); $('review-title').focus({preventScroll:true});
@@ -101,21 +104,21 @@ function renderReview() {
 }
 function setupControls() {
   const nav=$('section-nav');nav.replaceChildren();
-  Object.entries(dimensions).forEach(([dim,info],i)=>{
-    const button=document.createElement('button');button.type='button';button.className='section-link';button.dataset.dimension=dim;
+  Object.entries(sections).forEach(([dim,info],i)=>{
+    const button=document.createElement('button');button.type='button';button.className='section-link';button.dataset.section=dim;
     const number=document.createElement('span');number.className='section-number';number.textContent=String(i+1).padStart(2,'0');
     const detail=document.createElement('span'),title=document.createElement('strong'),caption=document.createElement('small');
     title.textContent=info.title;detail.append(title,caption);button.append(number,detail);
-    button.addEventListener('click',()=>{if(busy)return;current=questions.findIndex(q=>q.dimension===dim);renderQuestion(true);});nav.append(button);
+    button.addEventListener('click',()=>{if(busy)return;current=questions.findIndex(q=>q.section===dim);renderQuestion(true);});nav.append(button);
   });
   const options=$('answer-options'); options.replaceChildren();
   labels.forEach((label,i)=>{
-    const score=i-3;
-    const wrapper=document.createElement('label');wrapper.className='answer-choice';wrapper.dataset.score=score;wrapper.dataset.side=score>0?'positive':'negative';wrapper.title=label;
-    const input=document.createElement('input');input.type='radio';input.name='agreement';input.value=String(score);input.setAttribute('aria-label',label);
+    const choice=choiceValues[i];
+    const wrapper=document.createElement('label');wrapper.className='answer-choice';wrapper.dataset.score=i-3;wrapper.dataset.side=i>3?'positive':'negative';wrapper.title=label;
+    const input=document.createElement('input');input.type='radio';input.name='agreement';input.value=String(choice);input.setAttribute('aria-label',label);
     const circle=document.createElement('span');circle.className='answer-circle';circle.setAttribute('aria-hidden','true');
     circle.innerHTML='<svg class="icon"><use href="/static/icons.svg#check"/></svg>';
-    input.addEventListener('change',()=>selectAnswer(score));wrapper.append(input,circle);options.append(wrapper);
+    input.addEventListener('change',()=>selectAnswer(choice));wrapper.append(input,circle);options.append(wrapper);
   });
 }
 async function init() {
@@ -124,8 +127,9 @@ async function init() {
     const response=await fetch('/questions',{cache:'no-store',signal:AbortSignal.timeout(15000)});
     if(!response.ok)throw Error('questions');
     const data=await response.json();
-    if(!Array.isArray(data.questions)||data.questions.length!==32||!data.dimensions)throw Error('schema');
-    questions=data.questions;dimensions=data.dimensions;version=data.version;
+    if(!Array.isArray(data.questions)||data.questions.length!==32||!data.sections)throw Error('schema');
+    questions=data.questions;sections=data.sections;version=data.version;
+    $('local-model-notice').textContent=data.local_llm_status==='configured'?'Model bahasa lokal terpasang. Narasi generatif akan diproses di server ini.':'Narasi berbasis bukti siap. Mode generatif memerlukan runtime llama-cpp-python dan file model GGUF di server.';
     restoreDraft();setupControls();renderQuestion();
     $('load-state').hidden=true; $('question-area').setAttribute('aria-busy','false');
   } catch {
@@ -135,7 +139,7 @@ async function init() {
 function setBusy(value) {
   busy=value; $('review-content').setAttribute('aria-busy',String(value));
   document.querySelectorAll('#review-content button,#review-content input,#review-content select,#section-nav button,#reset').forEach(el=>{el.disabled=value;});
-  $('submit').querySelector('span').textContent=value?($('use-ai').checked?'Menyusun ulasan…':'Menghitung hasil…'):'Lihat hasilku';
+  $('submit').querySelector('span').textContent=value?($('use-local-llm').checked?'Menyusun ulasan…':'Menghitung hasil…'):'Lihat hasilku';
   const icon=$('submit').querySelector('svg');icon.classList.toggle('spin',value);
   icon.querySelector('use').setAttribute('href',`/static/icons.svg#${value?'loader-circle':'arrow-right'}`);
 }
@@ -150,17 +154,17 @@ async function inlineResult(result) {
 }
 async function submit() {
   if(busy)return;
-  const missing=questions.findIndex(q=>!validScore(answers[q.id]?.score));
+  const missing=questions.findIndex(q=>!validChoice(answers[q.id]?.choice));
   if(missing!==-1){current=missing;renderQuestion(true);return;}
   const age=$('user-age');
   if(age.value&&!age.checkValidity()){
     document.querySelector('.profile-block').open=true;age.reportValidity();return;
   }
   $('submit-error').hidden=true;saveDraft();
-  const payload={version,answers:questions.map(q=>({id:q.id,score:answers[q.id].score,reason:answers[q.id].reason||''})),user_name:$('user-name').value.trim(),user_age:age.value?Number(age.value):null,user_gender:$('user-gender').value,use_ai:$('use-ai').checked};
+  const payload={version,answers:questions.map(q=>({id:q.id,choice:answers[q.id].choice,reason:answers[q.id].reason||''})),user_name:$('user-name').value.trim(),user_age:age.value?Number(age.value):null,user_gender:$('user-gender').value,use_local_llm:$('use-local-llm').checked};
   setBusy(true);
   try {
-    const response=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(45000)});
+    const response=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout($('use-local-llm').checked?180000:30000)});
     if(!response.ok){
       if(response.status===422)throw Error('validation');
       throw Error('server');
@@ -173,21 +177,21 @@ async function submit() {
     await inlineResult(result);
   } catch(error) {
     if(!$('submit-error'))return;
-    $('submit-error').textContent=error.name==='TimeoutError'?'Proses lebih lama dari biasanya. Jawabanmu masih tersimpan di halaman ini. Coba lagi atau nonaktifkan ulasan AI.':error.message==='validation'?'Ada jawaban atau profil yang belum valid. Pastikan usia 13–100 dan semua pertanyaan sudah dijawab.':'Hasil belum bisa diproses. Periksa koneksi, lalu coba lagi. Jawabanmu tetap ada di halaman ini.';
+    $('submit-error').textContent=error.name==='TimeoutError'?'Proses lebih lama dari biasanya. Jawabanmu masih tersimpan di halaman ini. Coba lagi dengan narasi generatif lokal dinonaktifkan.':error.message==='validation'?'Ada jawaban atau profil yang belum valid. Pastikan usia 13–100 dan semua pertanyaan sudah dijawab.':'Hasil belum bisa diproses. Periksa koneksi, lalu coba lagi. Jawabanmu tetap ada di halaman ini.';
     $('submit-error').hidden=false;setBusy(false);
   }
 }
 $('previous').addEventListener('click',()=>{if(current>0){current--;renderQuestion(true);}});
-$('next').addEventListener('click',()=>{if(!validScore(answers[questions[current].id]?.score))return;if(current<questions.length-1){current++;renderQuestion(true);}else renderReview();});
+$('next').addEventListener('click',()=>{if(!validChoice(answers[questions[current].id]?.choice))return;if(current<questions.length-1){current++;renderQuestion(true);}else renderReview();});
 $('back-to-test').addEventListener('click',()=>renderQuestion(true));
-$('reason').addEventListener('input',()=>{const q=questions[current];answers[q.id]={score:answers[q.id]?.score??null,reason:$('reason').value};$('reason-count').textContent=`${$('reason').value.length}/600`;saveDraft();updateProgress();});
-['user-name','user-age','user-gender','use-ai'].forEach(id=>$(id).addEventListener('input',saveDraft));
+$('reason').addEventListener('input',()=>{const q=questions[current];answers[q.id]={choice:answers[q.id]?.choice??null,reason:$('reason').value};$('reason-count').textContent=`${$('reason').value.length}/600`;saveDraft();updateProgress();});
+['user-name','user-age','user-gender','use-local-llm'].forEach(id=>$(id).addEventListener('input',saveDraft));
 $('reload').addEventListener('click',init);$('submit').addEventListener('click',submit);
 $('reset').addEventListener('click',()=>{$('reset-dialog').returnValue='';$('reset-dialog').showModal();});
-$('reset-dialog').addEventListener('close',()=>{if($('reset-dialog').returnValue!=='reset')return;answers={};current=0;$('user-name').value='';$('user-age').value='';$('user-gender').value='';$('use-ai').checked=false;try{sessionStorage.removeItem(DRAFT_KEY);sessionStorage.removeItem(RESULT_KEY);localStorage.removeItem(RESULT_KEY);}catch{}renderQuestion(true);});
+$('reset-dialog').addEventListener('close',()=>{if($('reset-dialog').returnValue!=='reset')return;answers={};current=0;$('user-name').value='';$('user-age').value='';$('user-gender').value='';$('use-local-llm').checked=false;try{sessionStorage.removeItem(DRAFT_KEY);sessionStorage.removeItem(RESULT_KEY);localStorage.removeItem(RESULT_KEY);}catch{}renderQuestion(true);});
 document.addEventListener('keydown',event=>{
   if(busy||reviewing||!questions.length||$('reset-dialog').open||event.ctrlKey||event.metaKey||event.altKey)return;
-  if(event.target.matches('textarea,select,input:not([type="radio"])'))return;
-  if(/^[1-7]$/.test(event.key)){event.preventDefault();selectAnswer(Number(event.key)-4);document.querySelector(`input[name="agreement"][value="${Number(event.key)-4}"]`).focus();}
+  if(event.target.matches?.('textarea,select,input:not([type="radio"])'))return;
+  if(/^[1-7]$/.test(event.key)){event.preventDefault();selectAnswer(choiceValues[Number(event.key)-1]);document.querySelector(`input[name="agreement"][value="${choiceValues[Number(event.key)-1]}"]`).focus();}
 });
 init();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Tes kepribadian — InnerSelf</title>
-  <meta name="description" content="Kenali pola energi, cara berpikir, dan preferensimu melalui 32 pertanyaan refleksi kepribadian InnerSelf.">
+  <meta name="description" content="Kenali delapan fungsi kognitif dan alasan di balik pilihanmu melalui 32 pertanyaan refleksi kepribadian InnerSelf.">
   <meta name="theme-color" content="#142e38">
   <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/static/styles.css">
@@ -14,10 +14,10 @@
   <header class="site-header"><div class="header-inner">
     <a class="brand" href="/" aria-label="InnerSelf, halaman tes"><span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#fingerprint"/></svg></span><span>InnerSelf<span class="brand-dot">.</span></span></a>
     <div class="header-note">Sedikit refleksi, lebih mengenal diri.</div>
-    <span class="header-tag">PERSONALITY EXPLORER</span>
+    <span class="header-tag">COGNITIVE EXPLORER</span>
   </div></header>
   <main class="page-shell">
-    <div class="page-heading"><div><p class="eyebrow">RUANG UNTUK MENGENAL DIRI</p><h1>Mulai dari dirimu.</h1><p>Jawab sesuai keseharianmu. Tidak ada jawaban benar atau salah.</p></div><div class="time-badge"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#compass"/></svg><span><strong>32 pertanyaan</strong><small>Sekitar 6–9 menit</small></span></div></div>
+    <div class="page-heading"><div><p class="eyebrow">RUANG UNTUK MENGENAL DIRI</p><h1>Mulai dari dirimu.</h1><p>Jawab sesuai keseharianmu. Tidak ada jawaban benar atau salah.</p></div><div class="time-badge"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#compass"/></svg><span><strong>32 pertanyaan</strong><small>Luangkan waktu untuk bercerita</small></span></div></div>
     <div id="storage-notice" class="notice" role="status" hidden></div>
     <div class="test-layout">
       <aside class="journey" aria-label="Progres tes">
@@ -32,11 +32,11 @@
           <div id="load-state" class="empty-state"><svg class="icon spin" aria-hidden="true"><use href="/static/icons.svg#loader-circle"/></svg><h2>Menyiapkan pertanyaan…</h2><p>Ruang refleksimu sebentar lagi siap.</p></div>
           <div id="load-error" class="empty-state" hidden><h2>Pertanyaan belum bisa dimuat.</h2><p>Periksa koneksimu, lalu coba lagi.</p><button id="reload" class="button primary" type="button">Coba lagi</button></div>
           <div id="question-content" hidden>
-            <div class="question-topline"><span id="dimension-label" class="pill">Energi sosial</span><span class="question-counter">PERTANYAAN <b id="question-number">01</b><span> / 32</span></span></div>
+            <div class="question-topline"><span id="section-label" class="pill">Mengolah pengalaman</span><span class="question-counter">PERTANYAAN <b id="question-number">01</b><span> / 32</span></span></div>
             <div id="question-text-wrap" class="question-text-wrap"><p class="eyebrow" id="question-prompt">SEBERAPA SESUAI DENGAN DIRIMU?</p><h2 id="question-text" tabindex="-1"></h2></div>
-            <fieldset class="answer-field"><legend class="sr-only">Tingkat persetujuan</legend><div id="answer-options" class="answer-options"></div><div class="scale-guide" aria-hidden="true"><span>Tidak setuju</span><span>Netral</span><span>Setuju</span></div></fieldset>
-            <p id="selection-label" class="selection-label" aria-live="polite">Pilih jawaban yang paling mendekati.</p>
-            <details class="reason-block" id="reason-details"><summary><span><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#book-open"/></svg>Ingin cerita sedikit?<span class="optional">Opsional</span></span><svg class="icon chevron" aria-hidden="true"><use href="/static/icons.svg#chevron-down"/></svg></summary><label for="reason" class="sr-only">Alasan untuk jawaban ini</label><textarea id="reason" maxlength="600" rows="3" placeholder="Misalnya, aku lebih suka kelompok kecil karena…"></textarea><div class="field-hint"><span>Tambahkan konteks untuk refleksi yang lebih personal.</span><span id="reason-count">0/600</span></div></details>
+            <fieldset class="answer-field"><legend class="sr-only">Tingkat persetujuan</legend><div id="answer-options" class="answer-options"></div><div class="scale-guide" aria-hidden="true"><span>Tidak setuju</span><span>Kadang iya/tidak</span><span>Setuju</span></div></fieldset>
+            <p class="neutral-hint">Netral menyimpan −1 dan +1 secara terpisah: kadang tidak, kadang iya.</p>\n            <p id="selection-label" class="selection-label" aria-live="polite">Pilih jawaban yang paling mendekati.</p>
+            <details class="reason-block" id="reason-details"><summary><span><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#book-open"/></svg>Ingin cerita sedikit?<span class="optional">Opsional</span></span><svg class="icon chevron" aria-hidden="true"><use href="/static/icons.svg#chevron-down"/></svg></summary><label for="reason" class="sr-only">Alasan untuk jawaban ini</label><textarea id="reason" maxlength="600" rows="3" placeholder="Ceritakan apa yang kamu perhatikan, mengapa kamu memilihnya, dan kapan sikapmu berbeda…"></textarea><div class="field-hint"><span>Alasan dibaca model lokal; hindari data pribadi sensitif.</span><span id="reason-count">0/600</span></div></details>
             <div class="question-actions"><button id="previous" type="button" class="button secondary"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#arrow-left"/></svg>Sebelumnya</button><span class="keyboard-hint">Pilih 1–7 di keyboard</span><button id="next" type="button" class="button primary" disabled><span>Lanjut</span><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#arrow-right"/></svg></button></div>
           </div>
           <section id="review-content" hidden aria-labelledby="review-title">
@@ -44,7 +44,8 @@
             <h2 id="review-title" tabindex="-1">Sudah terasa seperti dirimu?</h2><p class="muted">Kamu bisa meninjau jawaban sebelum melihat hasilnya.</p>
             <div id="review-grid" class="review-grid" aria-label="Tinjau jawaban"></div>
             <details class="profile-block"><summary>Tambahkan profil <span class="optional">Opsional</span></summary><div class="profile-fields"><label>Nama panggilan<input id="user-name" maxlength="60" autocomplete="given-name" placeholder="Panggil aku…"></label><label>Usia<input id="user-age" type="number" min="13" max="100" inputmode="numeric" placeholder="13–100"></label><label>Gender<select id="user-gender"><option value="">Tidak disebutkan</option><option>Perempuan</option><option>Laki-laki</option></select></label></div></details>
-            <div class="ai-option"><label class="check-label"><input type="checkbox" id="use-ai"><span><strong><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#sparkles"/></svg>Tambahkan ulasan AI</strong><small>Jawaban dan profil opsionalmu akan dikirim ke Google Gemini untuk menyusun ulasan. Hasil dasar tetap tersedia jika AI tidak dapat diakses.</small></span></label></div>
+            <div class="local-analysis-note"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#shield-check"/></svg><div><strong>Analisis lokal, tanpa Gemini</strong><p>Pilihan dan alasan dinilai oleh model lokal. Tidak dikirim ke penyedia AI eksternal. Model penelitian ini menggunakan data sintetis.</p></div></div>
+            <div class="ai-option"><label class="check-label"><input type="checkbox" id="use-local-llm"><span><strong><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#sparkles"/></svg>Narasi generatif lokal <span class="optional">Opsional</span></strong><small id="local-model-notice">Memeriksa model bahasa lokal…</small></span></label></div>
             <p id="submit-error" class="error-message" role="alert" hidden></p>
             <div class="review-actions"><button id="back-to-test" type="button" class="button secondary"><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#arrow-left"/></svg>Tinjau jawaban</button><button id="submit" type="button" class="button primary"><span>Lihat hasilku</span><svg class="icon" aria-hidden="true"><use href="/static/icons.svg#arrow-right"/></svg></button></div>
           </section>

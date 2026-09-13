@@ -1,2 +1,2 @@
-# Compatibility for older installation instructions.
+# Compatibility for the original misspelled filename.
 -r requirements.txt
