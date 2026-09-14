@@ -1,8 +1,8 @@
 """Train the portable cognitive-reason classifier.
 
-By default this script combines cognitive_reasons.csv and cognitive_reasons_v2.csv.
-Only text is used as a feature. IDs, functions, family IDs and split names are
-metadata and are never fed to the classifier.
+By default this script combines cognitive_reasons.csv, cognitive_reasons_v2.csv,
+and cognitive_reasons_v3.csv. Only text is used as a feature. IDs, functions,
+family IDs and split names are metadata and are never fed to the classifier.
 
 The datasets are synthetic language simulations. Metrics therefore describe
 held-out synthetic text, not personality accuracy on real people.
@@ -27,6 +27,7 @@ BASE = Path(__file__).resolve().parent
 DEFAULT_DATASETS = [
     BASE / "data" / "cognitive_reasons.csv",
     BASE / "data" / "cognitive_reasons_v2.csv",
+    BASE / "data" / "cognitive_reasons_v3.csv",
 ]
 SPLITS = ("train", "validation", "test")
 
@@ -40,7 +41,7 @@ def normalize_and_merge(paths):
     """Combine datasets, normalize unknown labels, and remove exact text duplicates.
 
     Later datasets win when the same normalized text occurs with the same label,
-    so V2 can replace an older wording without creating duplicate training rows.
+    so newer datasets can replace older wording without creating duplicate rows.
     Conflicting labels for identical text are rejected.
     """
     merged = {}
@@ -94,8 +95,8 @@ def normalize_and_merge(paths):
 def assign_family_splits(rows):
     """Rebuild splits so a semantic family can never appear in two partitions.
 
-    V1 and V2 intentionally share family IDs such as Ti-04. Treating the same
-    family ID as one group across both datasets prevents cross-version leakage.
+    Dataset versions may intentionally share family IDs. Treating the same
+    family ID as one group across all datasets prevents cross-version leakage.
     Families are split per function, keeping every function represented in each
     partition when enough families exist.
     """
@@ -160,7 +161,7 @@ def main():
         dest="datasets",
         action="append",
         type=Path,
-        help="Dataset CSV. Repeat --dataset to combine several files. Defaults to V1 + V2.",
+        help="Dataset CSV. Repeat --dataset to combine several files. Defaults to V1 + V2 + V3.",
     )
     parser.add_argument("--output-dir", type=Path, default=BASE / "models")
     args = parser.parse_args()
@@ -247,7 +248,7 @@ def main():
     ])
 
     report = {
-        "scope": "SYNTHETIC held-out semantic families after V1+V2 regrouping. NOT measured accuracy on people.",
+        "scope": "SYNTHETIC held-out semantic families after V1+V2+V3 regrouping. NOT measured accuracy on people.",
         "real_world_validation": "not_performed",
         "datasets": [str(path.relative_to(BASE)) if path.is_relative_to(BASE) else str(path) for path in datasets],
         "dataset_sha256": combined_hash,
