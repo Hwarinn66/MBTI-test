@@ -41,7 +41,7 @@ const isNumber=value=>typeof value==='number'&&Number.isFinite(value);
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
 function element(tag,className,text){const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;}
 function validResult(r){
-  return r?.schema_version===2 && r.success===true && (r.final_result===null||Object.hasOwn(TYPES,r.final_result)) &&
+  return [2,3].includes(r?.schema_version) && r.success===true && (r.final_result===null||Object.hasOwn(TYPES,r.final_result)) &&
     r.functions && Object.keys(FUNCTIONS).every(f=>isNumber(r.functions[f]?.index)&&isNumber(r.functions[f]?.questionnaire_index)) &&
     Array.isArray(r.reflection?.paragraphs) && Array.isArray(r.reflection?.question_insights) && Array.isArray(r.decision?.candidates);
 }
