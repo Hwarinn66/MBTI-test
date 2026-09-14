@@ -18,7 +18,7 @@ from cognitive import FUNCTIONS, match_stacks, score_answers
 from database import health_status as database_health, save_feedback, save_submission
 from local_llm import availability, enhance_reflection
 from ml_local import analyze_reasons, load_classifier
-from narrative import build_reflection
+from narrative_human import build_reflection
 from questions import CHOICES, QUESTIONS, QUESTION_BY_ID, QUESTIONNAIRE_VERSION, SECTIONS
 
 BASE_DIR = Path(__file__).resolve().parent
