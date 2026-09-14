@@ -49,7 +49,10 @@ async def response_headers(request: Request, call_next):
         "font-src 'self'; connect-src 'self'; "
         "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
     )
-    if request.url.path in ("/submit", "/feedback", "/questions", "/health", "/famous_people.json"):
+    if request.url.path in (
+        "/submit", "/feedback", "/questions", "/health", "/famous_people.json",
+        "/result.html", "/static/result.js"
+    ):
         response.headers["Cache-Control"] = "no-store"
     return response
 
