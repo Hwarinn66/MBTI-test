@@ -1,0 +1,496 @@
+{
+  "version": "synthetic-natural-id-v3-100k",
+  "seed": 20260914,
+  "rows": 100000,
+  "unique_texts": 100000,
+  "sha256": "089ddafac8a80e1600062f2e575b23fc1c3ad36438d87c0c0d5bbdf7d4b68a54",
+  "schema": [
+    "sample_id",
+    "text",
+    "function",
+    "stance",
+    "label",
+    "family_id",
+    "split",
+    "source",
+    "generator_version"
+  ],
+  "label_counts": {
+    "Fe:mixed": 4000,
+    "Fe:oppose": 4000,
+    "Fe:support": 4000,
+    "Fi:mixed": 4000,
+    "Fi:oppose": 4000,
+    "Fi:support": 4000,
+    "Ne:mixed": 4000,
+    "Ne:oppose": 4000,
+    "Ne:support": 4000,
+    "Ni:mixed": 4000,
+    "Ni:oppose": 4000,
+    "Ni:support": 4000,
+    "Se:mixed": 4000,
+    "Se:oppose": 4000,
+    "Se:support": 4000,
+    "Si:mixed": 4000,
+    "Si:oppose": 4000,
+    "Si:support": 4000,
+    "Te:mixed": 4000,
+    "Te:oppose": 4000,
+    "Te:support": 4000,
+    "Ti:mixed": 4000,
+    "Ti:oppose": 4000,
+    "Ti:support": 4000,
+    "unknown": 4000
+  },
+  "function_counts": {
+    "Fe": 12000,
+    "Fi": 12000,
+    "Ne": 12000,
+    "Ni": 12000,
+    "Se": 12000,
+    "Si": 12000,
+    "Te": 12000,
+    "Ti": 12000,
+    "unknown": 4000
+  },
+  "split_counts": {
+    "test": 15000,
+    "train": 70000,
+    "validation": 15000
+  },
+  "semantic_families": 900,
+  "semantic_family_overlap": 0,
+  "valid_function_families_per_function": 100,
+  "unknown_families": 100,
+  "surface_variants_per_function_family_per_stance": 40,
+  "register_generation_counts": {
+    "formal": 20000,
+    "neutral": 20000,
+    "slang": 20000,
+    "chat": 20000,
+    "mixed": 20000
+  },
+  "design": {
+    "registers": [
+      "formal",
+      "neutral",
+      "slang",
+      "chat",
+      "mixed"
+    ],
+    "styles_per_register": 8,
+    "contexts_per_function": 10,
+    "concepts_per_function": 10,
+    "stances": [
+      "support",
+      "oppose",
+      "mixed"
+    ],
+    "notes": [
+      "Semua variasi dari semantic family yang sama berada di split yang sama.",
+      "Bahasa mencakup formal, netral, slang, chat abbreviation, dan code-mixed.",
+      "Dataset tetap sintetis; jumlah besar tidak menggantikan evaluasi pada alasan manusia nyata."
+    ]
+  },
+  "examples": {
+    "ngelist": [
+      {
+        "sample_id": "V3S000378",
+        "text": "Kalo pas menghadapi masalah yang belum pernah kutemui, gw lebih sering ngelist langkah sebelum mulai. buatku urutan kerja jadi jelas dan gw tahu apa yang harus diselesaikan dulu. kurang lebih begitu cara pikirku.",
+        "function": "Te",
+        "stance": "support",
+        "label": "Te:support",
+        "family_id": "v3-Te-003",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S000298",
+        "text": "Kalo waktu harus mengambil keputusan yang cukup penting, gw biasanya gak ngelist langkah sebelum mulai. gw lebih nyaman bergerak fleksibel tanpa terlalu mengatur langkah target atau ukuran hasil dari awal. kurang lebih begitu cara pikirku.",
+        "function": "Te",
+        "stance": "oppose",
+        "label": "Te:oppose",
+        "family_id": "v3-Te-002",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S001064",
+        "text": "Gw cukup fleksibel soal ngelist langkah sebelum mulai pas mengatur kegiatan sehari-hari; kalo targetnya jelas gw bisa banget terstruktur tapi kalo situasinya santai gw bisa membiarkan proses berjalan lebih bebas. biasanya begitu.",
+        "function": "Te",
+        "stance": "mixed",
+        "label": "Te:mixed",
+        "family_id": "v3-Te-008",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S000257",
+        "text": "Gua biasanya ngelist langkah sebelum mulai waktu harus mengambil keputusan yang cukup penting, soalnya urutan kerja jadi jelas dan gua tahu apa yang harus diselesaikan dulu. itu yang paling terasa buatku.",
+        "function": "Te",
+        "stance": "support",
+        "label": "Te:support",
+        "family_id": "v3-Te-002",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S000739",
+        "text": "Gue memang cenderung ngelist langkah sebelum mulai pas mempelajari topik baru; alasannya urutan kerja jadi jelas dan gue tahu apa yang harus diselesaikan dulu. biasanya begitu.",
+        "function": "Te",
+        "stance": "support",
+        "label": "Te:support",
+        "family_id": "v3-Te-006",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      }
+    ],
+    "membuat daftar": [
+      {
+        "sample_id": "V3S000886",
+        "text": "Meskipun orang lain sering membuat daftar langkah sebelum mulai saat harus menyelesaikan sesuatu dalam waktu terbatas, saya pribadi biasanya tidak. saya pribadi lebih nyaman bergerak fleksibel tanpa terlalu mengatur langkah target atau ukuran hasil dari awal.",
+        "function": "Te",
+        "stance": "oppose",
+        "label": "Te:oppose",
+        "family_id": "v3-Te-007",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S000172",
+        "text": "Ketika menyusun proyek kelompok, aku pribadi malah menghindari kebiasaan membuat daftar langkah sebelum mulai. aku pribadi lebih nyaman bergerak fleksibel tanpa terlalu mengatur langkah target atau ukuran hasil dari awal. itu yang paling terasa buatku.",
+        "function": "Te",
+        "stance": "oppose",
+        "label": "Te:oppose",
+        "family_id": "v3-Te-001",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S001081",
+        "text": "Saya biasanya membuat daftar langkah sebelum mulai waktu menghadapi perbedaan pendapat dengan orang lain, karena urutan kerja jadi jelas dan saya tahu apa yang harus diselesaikan dulu.",
+        "function": "Te",
+        "stance": "support",
+        "label": "Te:support",
+        "family_id": "v3-Te-009",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S000374",
+        "text": "Beberapa kali saat saat menghadapi masalah yang belum pernah kutemui, aku sendiri sadar kalau membuat daftar langkah sebelum mulai lebih cocok karena urutan kerja jadi jelas dan aku sendiri tahu apa yang harus diselesaikan dulu. biasanya begitu.",
+        "function": "Te",
+        "stance": "support",
+        "label": "Te:support",
+        "family_id": "v3-Te-003",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S000214",
+        "text": "Aku sendiri bisa membuat daftar langkah sebelum mulai ketika menyusun proyek kelompok, tetapi bukan setiap saat. kalau targetnya jelas aku sendiri bisa sangat terstruktur tapi kalau situasinya santai aku sendiri bisa membiarkan proses berjalan lebih bebas. biasanya begitu.",
+        "function": "Te",
+        "stance": "mixed",
+        "label": "Te:mixed",
+        "family_id": "v3-Te-001",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      }
+    ],
+    "gimana kalau": [
+      {
+        "sample_id": "V3S051125",
+        "text": "Saya sendiri membayangkan skenario gimana kalau dari suatu situasi ketika mempelajari topik baru. bukan sekadar kebiasaan; ini bukan sekadar susah fokus saya sendiri memang spontan melihat beberapa kemungkinan atau kaitan lain. setidaknya itu yang sering terjadi.",
+        "function": "Ne",
+        "stance": "support",
+        "label": "Ne:support",
+        "family_id": "v3-Ne-026",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S050755",
+        "text": "Gue tidak selalu membayangkan skenario gimana kalau dari suatu situasi waktu harus mengambil keputusan yang cukup penting. kalau masalahnya terbuka gue suka cari banyak opsi tapi kalau sudah ada approach yang jelas gue bisa berhenti mengeksplor kemungkinan lain. setidaknya itu yang sering terjadi.",
+        "function": "Ne",
+        "stance": "mixed",
+        "label": "Ne:mixed",
+        "family_id": "v3-Ne-022",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S050598",
+        "text": "Meskipun orang lain sering membayangkan skenario gimana kalau dari suatu situasi ketika menyusun proyek kelompok, gue biasanya tidak. gue lebih nyaman memilih satu approach yang sudah jelas daripada terus membuka kemungkinan dan alternatif baru. kurang lebih begitu cara pikirku.",
+        "function": "Ne",
+        "stance": "oppose",
+        "label": "Ne:oppose",
+        "family_id": "v3-Ne-021",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S051476",
+        "text": "Ketika mengatur kegiatan sehari-hari, pattern membayangkan skenario gimana kalau dari suatu situasi muncul pada situasi tertentu saja. Kalau masalahnya terbuka saya suka cari banyak opsi tapi kalau sudah ada approach yang jelas saya bisa berhenti mengeksplor kemungkinan lain.",
+        "function": "Ne",
+        "stance": "mixed",
+        "label": "Ne:mixed",
+        "family_id": "v3-Ne-028",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S050593",
+        "text": "Saya justru jarang membayangkan skenario gimana kalau dari suatu situasi ketika menyusun proyek kelompok; saya lebih nyaman memilih satu approach yang sudah jelas daripada terus membuka kemungkinan dan alternatif baru. kurang lebih begitu cara pikirku.",
+        "function": "Ne",
+        "stance": "oppose",
+        "label": "Ne:oppose",
+        "family_id": "v3-Ne-021",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      }
+    ],
+    "benang merah": [
+      {
+        "sample_id": "V3S060838",
+        "text": "Gue bisa cari benang merah dari banyak informasi ketika mempelajari topik baru, tetapi bukan setiap saat. untuk keputusan besar gue cari arah jangka panjang tapi untuk hal sehari-hari gue tidak selalu memikirkan pattern besarnya. kurang lebih begitu cara pikirku.",
+        "function": "Ni",
+        "stance": "mixed",
+        "label": "Ni:mixed",
+        "family_id": "v3-Ni-006",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S060572",
+        "text": "Ketika merencanakan kegiatan beberapa hari ke depan, pola mencari benang merah dari banyak informasi muncul pada situasi tertentu saja. Untuk keputusan besar aku pribadi mencari arah jangka panjang tapi untuk hal sehari-hari aku pribadi nggak selalu memikirkan pola besarnya. itu yang paling terasa buatku.",
+        "function": "Ni",
+        "stance": "mixed",
+        "label": "Ni:mixed",
+        "family_id": "v3-Ni-004",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S060177",
+        "text": "Gua justru jarang nyari benang merah dari banyak informasi pas nyusun proyek kelompok; gua jarang nyari satu pola besar atau arah jangka panjang dan lebih fokus pada hal yang langsung kelihatan. itu yang paling terasa buatku.",
+        "function": "Ni",
+        "stance": "oppose",
+        "label": "Ni:oppose",
+        "family_id": "v3-Ni-001",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S060199",
+        "text": "Saya hampir tidak pernah cari benang merah dari banyak informasi ketika menyusun proyek kelompok. saya jarang cari satu pattern besar atau arah jangka panjang dan lebih fokus pada hal yang langsung terlihat. biasanya begitu.",
+        "function": "Ni",
+        "stance": "oppose",
+        "label": "Ni:oppose",
+        "family_id": "v3-Ni-001",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S060780",
+        "text": "Pas mempelajari topik baru, gua malah menghindari kebiasaan nyari benang merah dari banyak informasi. gua jarang nyari satu pola besar atau arah jangka panjang dan lebih fokus pada hal yang langsung kelihatan. setidaknya itu yang sering terjadi.",
+        "function": "Ni",
+        "stance": "oppose",
+        "label": "Ni:oppose",
+        "family_id": "v3-Ni-006",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      }
+    ],
+    "vibe": [
+      {
+        "sample_id": "V3S033359",
+        "text": "Ada kondisi ketika saya membantu menenangkan konflik antarorang saat harus menyelesaikan sesuatu dalam waktu terbatas, dan ada juga kondisi ketika pendekatannya kebalikannya. kalau menyangkut orang dekat saya sangat mempertimbangkan vibe tapi di situasi lain saya bisa lebih fokus pada pendirianku sendiri. biasanya begitu.",
+        "function": "Fe",
+        "stance": "mixed",
+        "label": "Fe:mixed",
+        "family_id": "v3-Fe-077",
+        "split": "validation",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S034318",
+        "text": "Gue bisa menunjukkan dukungan saat orang lain sedang kesulitan waktu berdiskusi dengan teman, tetapi bukan setiap saat. kalau menyangkut orang dekat gue sangat mempertimbangkan vibe tapi di situasi lain gue bisa lebih fokus pada pendirianku sendiri. kurang lebih begitu cara pikirku.",
+        "function": "Fe",
+        "stance": "mixed",
+        "label": "Fe:mixed",
+        "family_id": "v3-Fe-085",
+        "split": "test",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S034158",
+        "text": "Meskipun orang lain sering menunjukkan dukungan saat orang lain sedang kesulitan ketika merencanakan kegiatan beberapa hari ke depan, gue biasanya tidak. gue tidak terlalu adjust keputusan dengan vibe kelompok dan lebih sering memakai pertimbanganku sendiri. kurang lebih begitu cara pikirku.",
+        "function": "Fe",
+        "stance": "oppose",
+        "label": "Fe:oppose",
+        "family_id": "v3-Fe-084",
+        "split": "validation",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S028237",
+        "text": "Aku memperhatikan siapa yang terlihat tidak nyaman waktu berdiskusi dengan teman. bukan sekadar kebiasaan; aku bukan cuma ikut orang lain aku memang mempertimbangkan bagaimana keputusan itu memengaruhi vibe dan hubungan. itu yang paling terasa buatku.",
+        "function": "Fe",
+        "stance": "support",
+        "label": "Fe:support",
+        "family_id": "v3-Fe-035",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S033840",
+        "text": "Aku cukup fleksibel soal menunjukkan dukungan saat orang lain sedang kesulitan ketika menyusun proyek kelompok; kalau menyangkut orang dekat aku sangat mempertimbangkan vibe tapi di situasi lain aku bisa lebih fokus pada pendirianku sendiri. setidaknya itu yang sering terjadi.",
+        "function": "Fe",
+        "stance": "mixed",
+        "label": "Fe:mixed",
+        "family_id": "v3-Fe-081",
+        "split": "validation",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      }
+    ],
+    "pake": [
+      {
+        "sample_id": "V3S092863",
+        "text": "Ada kondisi pas gua pake contoh konkret dari masa lalu sebagai patokan pas menghadapi masalah yang belum pernah kutemui, dan ada juga kondisi pas pendekatannya kebalikannya. kalo ada pengalaman yang relevan gua memakainya sebagai acuan tapi kalo situasinya benar-benar baru gua bisa mencoba pendekatan lain. kurang lebih begitu cara pikirku.",
+        "function": "Si",
+        "stance": "mixed",
+        "label": "Si:mixed",
+        "family_id": "v3-Si-073",
+        "split": "validation",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S092872",
+        "text": "Gue cukup fleksibel soal pake contoh konkret dari masa lalu sebagai patokan pas menghadapi masalah yg belum pernah kutemui; klo ada pengalaman yg relevan gue memakainya sebagai acuan tapi klo situasinya benar-benar baru gue bisa mencoba pendekatan lain. itu yang paling terasa buatku.",
+        "function": "Si",
+        "stance": "mixed",
+        "label": "Si:mixed",
+        "family_id": "v3-Si-073",
+        "split": "validation",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S093061",
+        "text": "Gw gak terlalu suka pake contoh konkret dari masa lalu sebagai patokan waktu berdiskusi sama teman; buatku cara seperti itu bukan pilihan utama. gw gak terlalu memakai pengalaman lama sebagai patokan dan lebih suka memperlakukan situasi baru sebagai hal yang benar-benar baru.",
+        "function": "Si",
+        "stance": "oppose",
+        "label": "Si:oppose",
+        "family_id": "v3-Si-075",
+        "split": "validation",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S092503",
+        "text": "Ada kondisi pas gua pake contoh konkret dari masa lalu sebagai patokan pas mengerjakan tugas kuliah, dan ada juga kondisi pas pendekatannya kebalikannya. kalo ada pengalaman yang relevan gua memakainya sebagai acuan tapi kalo situasinya benar-benar baru gua bisa mencoba pendekatan lain. kurang lebih begitu cara pikirku.",
+        "function": "Si",
+        "stance": "mixed",
+        "label": "Si:mixed",
+        "family_id": "v3-Si-070",
+        "split": "validation",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S085862",
+        "text": "Meskipun orang lain sering pake cara yang udah pernah terbukti berhasil waktu berdiskusi sama teman, gue biasanya gak. gue gak terlalu memakai pengalaman lama sebagai patokan dan lebih suka memperlakukan situasi baru sebagai hal yang benar-benar baru. itu yang paling terasa buatku.",
+        "function": "Si",
+        "stance": "oppose",
+        "label": "Si:oppose",
+        "family_id": "v3-Si-015",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      }
+    ],
+    "pengalaman": [
+      {
+        "sample_id": "V3S092863",
+        "text": "Ada kondisi pas gua pake contoh konkret dari masa lalu sebagai patokan pas menghadapi masalah yang belum pernah kutemui, dan ada juga kondisi pas pendekatannya kebalikannya. kalo ada pengalaman yang relevan gua memakainya sebagai acuan tapi kalo situasinya benar-benar baru gua bisa mencoba pendekatan lain. kurang lebih begitu cara pikirku.",
+        "function": "Si",
+        "stance": "mixed",
+        "label": "Si:mixed",
+        "family_id": "v3-Si-073",
+        "split": "validation",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S089824",
+        "text": "Gw pernah mencoba mengecek apakah sesuatu berbeda dari biasanya pas mengatur kegiatan sehari-hari, tapi akhirnya lebih sering memakai cara lain soalnya gw gak terlalu memakai pengalaman lama sebagai patokan dan lebih suka memperlakukan situasi baru sebagai hal yang benar-benar baru. biasanya begitu.",
+        "function": "Si",
+        "stance": "oppose",
+        "label": "Si:oppose",
+        "family_id": "v3-Si-048",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S091661",
+        "text": "Buat gw, kebiasaan mencatat langkah yang berhasil supaya bisa diulang pas menghadapi masalah yang belum pernah kutemui itu banget situasional. kalo ada pengalaman yang relevan gw memakainya sebagai acuan tapi kalo situasinya benar-benar baru gw bisa mencoba pendekatan lain.",
+        "function": "Si",
+        "stance": "mixed",
+        "label": "Si:mixed",
+        "family_id": "v3-Si-063",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S075370",
+        "text": "Kalau ketika mengatur kegiatan sehari-hari, aku lebih sering belajar lewat praktik langsung. buatku pengalaman nyata lebih cepat membuatku mengerti daripada hanya membaca teori. setidaknya itu yang sering terjadi.",
+        "function": "Se",
+        "stance": "support",
+        "label": "Se:support",
+        "family_id": "v3-Se-028",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      },
+      {
+        "sample_id": "V3S090827",
+        "text": "Aku ga selalu mengacu pada pengalaman pribadi sblm menerima cara baru pas mempelajari topik baru. klo ada pengalaman yg relevan aku memakainya sebagai acuan tapi klo situasinya benar-benar baru aku bisa mencoba pendekatan lain. itu yang paling terasa buatku.",
+        "function": "Si",
+        "stance": "mixed",
+        "label": "Si:mixed",
+        "family_id": "v3-Si-056",
+        "split": "train",
+        "source": "synthetic_natural_variation",
+        "generator_version": "synthetic-natural-id-v3-100k"
+      }
+    ]
+  }
+}
