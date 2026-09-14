@@ -6,6 +6,40 @@ const labels = ['Sangat tidak setuju', 'Tidak setuju', 'Agak tidak setuju', 'Net
 const choiceValues = [-3,-2,-1,'neutral',1,2,3];
 const choiceLabel = c => labels[choiceValues.indexOf(c)];
 const parseChoice = v => v === 'neutral' ? v : Number(v);
+const QUESTION_EXAMPLES = {
+  1:'Saat rapat mendadak pindah tempat, kamu cepat melihat kondisi baru dan langsung menyesuaikan langkah.',
+  2:'Ketika menghadapi tugas baru, kamu teringat tugas serupa sebelumnya lalu membandingkan apa yang sama atau berbeda.',
+  3:'Saat belajar memakai alat baru, kamu cenderung tidak langsung mencoba dan lebih nyaman mengamati atau membaca dulu.',
+  4:'Walau pernah menghadapi masalah yang mirip, pengalaman lama biasanya tidak banyak memengaruhi keputusanmu sekarang.',
+  5:'Di tempat ramai, kamu cepat sadar pada suara, gerakan, posisi benda, atau perubahan kecil yang sedang terjadi.',
+  6:'Ketika kembali ke tempat yang pernah didatangi, kamu mudah sadar jika tata letaknya berbeda dari yang kamu ingat.',
+  7:'Saat suasana kelas atau ruangan berubah, kamu kadang baru menyadarinya setelah orang lain menunjukkannya.',
+  8:'Ketika mengulang pekerjaan yang pernah berhasil, kamu biasanya tidak terlalu mengecek apakah langkahnya sama seperti sebelumnya.',
+  9:'Mendengar satu ide tentang usaha, pikiranmu segera bercabang ke berbagai kemungkinan produk atau cara lain.',
+  10:'Dari beberapa kejadian kecil, kamu mencoba menangkap satu arah besar tentang apa yang sedang terjadi.',
+  11:'Saat orang memberi dua pilihan, biasanya kamu tidak spontan memikirkan pilihan ketiga atau keempat.',
+  12:'Beberapa kejadian terjadi berdekatan, tetapi kamu tidak selalu merasa perlu mencari hubungan atau makna yang menyatukannya.',
+  13:'Melihat cara yang sudah biasa dipakai, kamu suka bertanya “kalau diubah begini bagaimana?” lalu menjelajahi beberapa alternatif.',
+  14:'Sebelum mengambil keputusan jangka panjang, kamu membayangkan ke mana pola yang sekarang mungkin berkembang.',
+  15:'Ide dari sekolah, hobi, dan teknologi jarang kamu gabungkan untuk menemukan gagasan baru.',
+  16:'Kamu lebih sering menilai kejadian satu per satu daripada mencari gambaran besar yang menghubungkannya.',
+  17:'Saat memilih cara kerja, kamu membandingkan hasil nyata seperti waktu, jumlah yang selesai, atau kualitas untuk melihat mana yang efektif.',
+  18:'Ketika mendengar penjelasan, kamu ingin tahu apakah alasan pada tiap bagiannya saling nyambung dan tidak bertentangan.',
+  19:'Saat mengurus tugas kelompok, kamu sering bekerja tanpa target yang jelas atau ukuran untuk mengetahui apakah hasilnya berhasil.',
+  20:'Jika suatu kesimpulan terdengar meyakinkan, kamu cenderung menerimanya tanpa membedah apakah alasan di baliknya konsisten.',
+  21:'Dalam proyek kelompok, kamu suka menentukan apa yang paling penting, siapa mengerjakan apa, dan hasil akhir yang harus tercapai.',
+  22:'Jika sebuah aplikasi bermasalah, kamu ingin memahami penyebab atau cara kerja dasarnya, bukan hanya mengikuti langkah perbaikan.',
+  23:'Saat dua metode sama-sama mungkin dipakai, angka seperti waktu pengerjaan atau tingkat hasil bukan pertimbangan utamamu.',
+  24:'Saat orang memakai istilah yang kurang tepat atau argumennya agak meloncat, kamu biasanya tidak terlalu mempermasalahkan definisi atau logikanya.',
+  25:'Dalam keputusan kelompok, kamu mencoba mempertimbangkan kebutuhan beberapa orang dan mencari pilihan yang bisa diterima bersama.',
+  26:'Saat memilih jurusan, pekerjaan, atau keputusan penting, kamu memeriksa apakah pilihan itu sesuai dengan nilai yang penting bagimu.',
+  27:'Saat teman tidak setuju, kamu cenderung menyampaikan pendapat dengan cara yang sama tanpa banyak menyesuaikan agar mereka merasa didengar.',
+  28:'Meski sebuah pilihan terasa bertentangan dengan keyakinanmu, kamu biasanya tidak banyak memikirkan benturan itu.',
+  29:'Saat suasana kelompok mulai tegang, kamu cepat menangkapnya dan menyesuaikan cara bicara atau tindakan agar hubungan tidak makin buruk.',
+  30:'Orang lain menginginkan pilihan A, tetapi jika menurut nuranimu B lebih benar, kamu tetap bisa memilih B.',
+  31:'Saat terjadi konflik, fokusmu biasanya bukan mencari titik temu atau menjaga perasaan bersama.',
+  32:'Jika suatu pilihan bertentangan dengan nilai yang biasanya penting bagimu, kamu relatif mudah mengabaikannya tanpa mengecek kembali.'
+};
 let questions = [], sections = {}, version = '', answers = {}, current = 0, busy = false, reviewing = false;
 let storageAvailable = true;
 const validChoice = (s) => choiceValues.includes(s);
@@ -74,6 +108,16 @@ function selectAnswer(choice) {
   $('next').disabled = false;
   saveDraft(); updateProgress();
 }
+function questionExampleNode() {
+  let node=$('question-example');
+  if(node)return node;
+  node=document.createElement('p');
+  node.id='question-example';
+  node.className='muted';
+  node.style.cssText='margin-top:12px;max-width:650px;font-size:.84rem;line-height:1.65;letter-spacing:0';
+  $('question-text').insertAdjacentElement('afterend',node);
+  return node;
+}
 function renderQuestion(focus = false) {
   reviewing=false;
   $('question-content').hidden=false; $('review-content').hidden=true;
@@ -81,6 +125,10 @@ function renderQuestion(focus = false) {
   $('section-label').textContent=sections[q.section].title;
   $('question-number').textContent=String(current+1).padStart(2,'0');
   $('question-text').textContent=q.text;
+  const example=QUESTION_EXAMPLES[q.id];
+  const exampleNode=questionExampleNode();
+  exampleNode.textContent=example?`Contoh situasi: ${example}`:'';
+  exampleNode.hidden=!example;
   document.querySelectorAll('input[name="agreement"]').forEach(input=>{input.checked=validChoice(answer?.choice)&&input.value===String(answer.choice);});
   $('selection-label').textContent=validChoice(answer?.choice)?choiceLabel(answer.choice):'Pilih jawaban yang paling mendekati.';
   $('reason').value=answer?.reason||''; $('reason-count').textContent=`${$('reason').value.length}/600`;
