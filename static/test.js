@@ -19,7 +19,7 @@ function storageNotice() {
   }
 }
 function saveDraft() {
-  const draft = {version, answers, current, profile:{name:$('user-name').value, age:$('user-age').value, gender:$('user-gender').value, local_llm:$('use-local-llm').checked}};
+  const draft = {version, answers, current, profile:{name:$('user-name').value, age:$('user-age').value, gender:$('user-gender').value, local_llm:$('use-local-llm').checked, research:$('allow-research-storage')?.checked===true}};
   try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); }
   catch { storageAvailable = false; storageNotice(); }
 }
@@ -44,6 +44,7 @@ function restoreDraft() {
     $('user-age').value = Number.isInteger(age)&&age>=13&&age<=100 ? String(age) : '';
     $('user-gender').value = ['Perempuan','Laki-laki','Nonbiner'].includes(profile.gender) ? profile.gender : '';
     $('use-local-llm').checked = profile.local_llm === true;
+    if ($('allow-research-storage')) $('allow-research-storage').checked = profile.research === true;
   } catch { try { sessionStorage.removeItem(DRAFT_KEY); } catch { storageAvailable=false; storageNotice(); } }
 }
 function updateProgress() {
@@ -131,6 +132,11 @@ async function init() {
     if(!Array.isArray(data.questions)||data.questions.length!==32||!data.sections)throw Error('schema');
     questions=data.questions;sections=data.sections;version=data.version;
     $('local-model-notice').textContent=data.local_llm_status==='configured'?'Model bahasa lokal terpasang. Narasi generatif akan diproses di server ini.':'Narasi berbasis bukti siap. Mode generatif memerlukan runtime llama-cpp-python dan file model GGUF di server.';
+    if ($('database-notice')) {
+      if (data.database_status === 'ready') $('database-notice').textContent='Jika dicentang, alasan dan hasil klasifikasi disimpan secara pseudonim di MySQL lokal untuk riset variasi bahasa. Nama panggilan tidak disimpan.';
+      else if (data.database_status === 'disabled') $('database-notice').textContent='Penyimpanan riset belum diaktifkan pada server. Tes tetap dapat digunakan normal.';
+      else $('database-notice').textContent='MySQL belum dapat dihubungi. Tes tetap dapat digunakan, tetapi data riset tidak akan tersimpan.';
+    }
     restoreDraft();setupControls();renderQuestion();
     $('load-state').hidden=true; $('question-area').setAttribute('aria-busy','false');
   } catch {
@@ -162,7 +168,7 @@ async function submit() {
     document.querySelector('.profile-block').open=true;age.reportValidity();return;
   }
   $('submit-error').hidden=true;saveDraft();
-  const payload={version,answers:questions.map(q=>({id:q.id,choice:answers[q.id].choice,reason:answers[q.id].reason||''})),user_name:$('user-name').value.trim(),user_age:age.value?Number(age.value):null,user_gender:$('user-gender').value,use_local_llm:$('use-local-llm').checked};
+  const payload={version,answers:questions.map(q=>({id:q.id,choice:answers[q.id].choice,reason:answers[q.id].reason||''})),user_name:$('user-name').value.trim(),user_age:age.value?Number(age.value):null,user_gender:$('user-gender').value,use_local_llm:$('use-local-llm').checked,allow_research_storage:$('allow-research-storage')?.checked===true};
   setBusy(true);
   try {
     const response=await fetch('/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout($('use-local-llm').checked?900000:30000)});
@@ -186,10 +192,10 @@ $('previous').addEventListener('click',()=>{if(current>0){current--;renderQuesti
 $('next').addEventListener('click',()=>{if(!validChoice(answers[questions[current].id]?.choice))return;if(current<questions.length-1){current++;renderQuestion(true);}else renderReview();});
 $('back-to-test').addEventListener('click',()=>renderQuestion(true));
 $('reason').addEventListener('input',()=>{const q=questions[current];answers[q.id]={choice:answers[q.id]?.choice??null,reason:$('reason').value};$('reason-count').textContent=`${$('reason').value.length}/600`;saveDraft();updateProgress();});
-['user-name','user-age','user-gender','use-local-llm'].forEach(id=>$(id).addEventListener('input',saveDraft));
+['user-name','user-age','user-gender','use-local-llm','allow-research-storage'].forEach(id=>{const el=$(id);if(el)el.addEventListener('input',saveDraft);});
 $('reload').addEventListener('click',init);$('submit').addEventListener('click',submit);
 $('reset').addEventListener('click',()=>{$('reset-dialog').returnValue='';$('reset-dialog').showModal();});
-$('reset-dialog').addEventListener('close',()=>{if($('reset-dialog').returnValue!=='reset')return;answers={};current=0;$('user-name').value='';$('user-age').value='';$('user-gender').value='';$('use-local-llm').checked=false;try{sessionStorage.removeItem(DRAFT_KEY);sessionStorage.removeItem(RESULT_KEY);localStorage.removeItem(RESULT_KEY);}catch{}renderQuestion(true);});
+$('reset-dialog').addEventListener('close',()=>{if($('reset-dialog').returnValue!=='reset')return;answers={};current=0;$('user-name').value='';$('user-age').value='';$('user-gender').value='';$('use-local-llm').checked=false;if($('allow-research-storage'))$('allow-research-storage').checked=false;try{sessionStorage.removeItem(DRAFT_KEY);sessionStorage.removeItem(RESULT_KEY);localStorage.removeItem(RESULT_KEY);}catch{}renderQuestion(true);});
 document.addEventListener('keydown',event=>{
   if(busy||reviewing||!questions.length||$('reset-dialog').open||event.ctrlKey||event.metaKey||event.altKey)return;
   if(event.target.matches?.('textarea,select,input:not([type="radio"])'))return;
